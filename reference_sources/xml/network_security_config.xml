@@ -1,0 +1,44 @@
+<?xml version="1.0" ?>
+<network-security-config>
+    
+  
+    <base-config cleartextTrafficPermitted="false">
+        
+    
+        <trust-anchors>
+            
+      
+            <certificates src="system"/>
+            
+    
+        </trust-anchors>
+        
+  
+    </base-config>
+    
+  
+    <domain-config cleartextTrafficPermitted="false">
+        
+    
+        <domain includeSubdomains="true">focusapp.ai</domain>
+        
+    
+        <trust-anchors>
+            
+      
+            <certificates src="system"/>
+            
+      
+            <certificates src="@7F120076"/>
+            
+      
+            <certificates src="user"/>
+            
+    
+        </trust-anchors>
+        
+  
+    </domain-config>
+    
+
+</network-security-config>

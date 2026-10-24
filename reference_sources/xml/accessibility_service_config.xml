@@ -1,0 +1,2 @@
+<?xml version="1.0" ?>
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android" android:description="@7F13002C" android:settingsActivity="ai.focus.HomePageActivity" android:accessibilityEventTypes="0xFFFFFFFF" android:accessibilityFeedbackType="0x00000001" android:notificationTimeout="500" android:accessibilityFlags="0x00000053" android:canRetrieveWindowContent="true"/>

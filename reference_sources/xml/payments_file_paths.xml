@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<paths>
+    
+  
+    <cache-path name="payments_shared_qr_codes" path="shared_qr_codes/"/>
+    
+
+</paths>

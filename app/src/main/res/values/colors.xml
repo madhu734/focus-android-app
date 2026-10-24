@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Core Brand & Theme Color Tokens -->
+    <color name="primary_green">#83D65C</color>
+    <color name="splash_bg">#113601</color>
+    <color name="dark_surface">#111412</color>
+    <color name="neutral0">#000000</color>
+    <color name="neutral10">#1A1A1A</color>
+    <color name="neutral90">#CBCCCA</color>
+    <color name="neutral100">#FCFFFA</color>
+    <color name="dim_transparent">#99000000</color>
+    <color name="dim_transparent_80">#CC000000</color>
+    <color name="gold">#FFD642</color>
+    <color name="secondary_orange">#FF8000</color>
+    <color name="error_toast_background">#640009</color>
+    <color name="nav_bar_color">#0D0D0D</color>
+</resources>

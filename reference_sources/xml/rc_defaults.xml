@@ -1,0 +1,3243 @@
+<?xml version="1.0" ?>
+<defaults>
+    
+  
+    <entry>
+        
+    
+        <key>MINIMUM_BUDGET_IN_MINS</key>
+        
+    
+        <value>20</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>DEFAULT_FAST_FORWARD_FACTOR</key>
+        
+    
+        <value>60</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>KEY_SHOW_FAST_FORWARD_MENU</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_USAGE_UPLOAD_BACKOFF_DELAY</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>REMOTE_CONFIG_FETCH_INTERVAL_IN_SECS</key>
+        
+    
+        <value>3600</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVER_URL</key>
+        
+    
+        <value>https://api.focusapp.ai</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NUM_DAYS_FOR_USAGE_CALCULATION</key>
+        
+    
+        <value>7</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MILLIS_IN_A_DAY</key>
+        
+    
+        <value>86400000.0</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MINIMUM_APP_USAGE_FOR_STATS_IN_MINS</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MIXPANEL_TOKEN</key>
+        
+    
+        <value>2131ab690fd24c133cd75c304c56bb34</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>CHECK_APP_INTERVAL_IN_MS</key>
+        
+    
+        <value>900</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ONE_BLOCK_INTERVAL</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NUDGE_INTERVAL_IN_SECS</key>
+        
+    
+        <value>5</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MAX_WAIT_TIME_FOR_CONTINUE_IN_SECS</key>
+        
+    
+        <value>3</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>OVERLAY_SHORT_TERM_MEMORY_IN_MINS</key>
+        
+    
+        <value>1440</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>WAIT_TIME_FOR_CONTINUE_IN_SECS</key>
+        
+    
+        <value>0</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_ID_FOR_ALL_APPS</key>
+        
+    
+        <value>FULL_100BLOX</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHARED_PREFERENCES_NAME</key>
+        
+    
+        <value>100blox_app_prefs</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_USAGE_UPLOAD_BACKOFF_DELAY_UNIT</key>
+        
+    
+        <value>MINUTES</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_USAGE_UPLOAD_INTERVAL</key>
+        
+    
+        <value>1</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_USAGE_UPLOAD_FREQUENCY</key>
+        
+    
+        <value>HOURS</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NUDGE_LIMIT_REACHED_TEXT</key>
+        
+    
+        <value>It's time for a break!</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>CONTINUE_10_MORE_MINS</key>
+        
+    
+        <value>Continue for 10 more mins</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SET_TIME_LIMIT_TEXT</key>
+        
+    
+        <value>When should I remind you to close %1$s?</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>DIVERSION_FEATURE_V1</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PLAY_STORE_SIGNATURE_DIGEST</key>
+        
+    
+        <value>8dY9yfbVt6wQkbancjuVdmTTb2A=</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_UPDATE_RECOMMENDATION_FREQUENCY_IN_MINS</key>
+        
+    
+        <value>300</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_NEW_VERSION_CODE</key>
+        
+    
+        <value>14</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_UPDATE_RECOMMENDATION_TITLE_V1</key>
+        
+    
+        <value>New enhancements made for you.</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_UPDATE_RECOMMENDATION_DESCRIPTION_V1</key>
+        
+    
+        <value>Update app</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FEEDBACK_CHANNEL</key>
+        
+    
+        <value>whatsapp</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>WHATSAPP_NUMBER</key>
+        
+    
+        <value>916362690964</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>TALK_TO_FOUNDER_NUMBER</key>
+        
+    
+        <value>916362690964</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>UNINSTALL_PHONE_NUMBER</key>
+        
+    
+        <value>916362690964</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>OUR_MISSION_CALL_ME_NUMBER</key>
+        
+    
+        <value>916362690964</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>WHATSAPP_MESSAGE</key>
+        
+    
+        <value>Please share your feedback below:</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FEEDBACK_EMAIL_ID</key>
+        
+    
+        <value>help@focusapp.ai</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FEEDBACK_PRIORITY_EMAIL_ID</key>
+        
+    
+        <value>help@focusapp.ai</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FEEDBACK_ADDITIONAL_INFO</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>KEY_MINIMUM_PHONE_SIZE_TO_SHOW_BLOCKS</key>
+        
+    
+        <value>800</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SELECTION_TIME_LIST</key>
+        
+    
+        <value>[2,5,10,20]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>DEBUG_LOG_VERSIONS</key>
+        
+    
+        <value>[12.9.295,12.10.297]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SELECTION_DEFAULT_TIME</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>TODO_TASK_UPDATE_INTERVAL_IN_MILLIS</key>
+        
+    
+        <value>200</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>TODO_INTRO_CARD_DESCRIPTION</key>
+        
+    
+        <value>Add your tasks and get a heads-up before losing time on social media</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVICE_CHECK_INTERVAL_IN_MINUTES</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVICE_FIXING_CHECK_INTERVAL_IN_MINUTES</key>
+        
+    
+        <value>60</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_SERVICE_FIXING_CHECK_INTERVAL_IN_MINUTES</key>
+        
+    
+        <value>30</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IMPACT_DAYS_CONSIDER_BEFORE</key>
+        
+    
+        <value>8</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MINIMUM_IMPACT_IN_MINS</key>
+        
+    
+        <value>5</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MINIMUM_YESTERDAY_USAGE_IN_MINS</key>
+        
+    
+        <value>60</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IS_VIBRATION_ENABLED_ON_OVERLAY</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>UNSUPPORTED_APPS</key>
+        
+    
+        <value>com.mygate.user</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRIVACY_POLICY_URL</key>
+        
+    
+        <value>https://focusapp.ai/#privacy-policy</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>TERMS_OF_SERVICE_URL</key>
+        
+    
+        <value>https://focusapp.ai/#termsofuse</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PAYMENT_POLICY_URL</key>
+        
+    
+        <value>https://focusapp.ai/#refundpolicy</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>RESOURCE_REFERENCE_URL</key>
+        
+    
+        <value> https://www.researchgate.net/publication/334490090_Batching_smartphone_notifications_can_improve_well-being </value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>TASK_SCREEN_TITLE_NAME</key>
+        
+    
+        <value>To-do list</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>CONTROL_APPS_SCREEN_TITLE_NAME</key>
+        
+    
+        <value>App Reminders</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHARE_APP_LINK</key>
+        
+    
+        <value>https://focusapp.ai/download</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>TODO_TYPING_ANIMATION_TEXTS</key>
+        
+    
+        <value>Call my dad,Order groceries from Swiggy,Send a thank you message to a friend,Write
+            daily journal in notes app</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>OVERLAY_SAME_APP_ID_INTENT_CHANGE_TIME</key>
+        
+    
+        <value>5000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>DOOM_SCROLL_MINUTES</key>
+        
+    
+        <value>30,20,10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>DOOM_SCROLL_WAIT_TIME</key>
+        
+    
+        <value>7,5,3</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>DOOM_SCROLL_THRESHOLD</key>
+        
+    
+        <value>0.8</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_LIMIT_REACHED_WAIT_TIME</key>
+        
+    
+        <value>7</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>WEE_HOUR_CUT_OFF_TIME_24H</key>
+        
+    
+        <value>4</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MAXIMUM_EDIT_TIMER_MINUTES_ALLOWED</key>
+        
+    
+        <value>60</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>TODO_EMPTY_TASK_ANIMATION_ENABLED</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_ADS_TO_NEW_USERS_ONLY</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOULD_SHOW_AD</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>WEEKLY_IMPACT_CARD_SHARABLE_TEXT_CONTENT</key>
+        
+    
+        <value>Woohoo !! Here is my last week achievement</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>WEEKLY_IMPACT_CARD_DISPLAY_ONCE</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>EVENT_DATA_EXPIRY_DAYS_TO_DELETE</key>
+        
+    
+        <value>30</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FEATURE_WEEKLY_IMPACT_CARD_ENABLED</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SAVE_HOURLY_USAGE_TO_MIXPANEL</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MIN_IDLE_DURATION_IN_MILLIS</key>
+        
+    
+        <value>3600000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MIN_ACTIVE_DURATION_IN_MILLIS</key>
+        
+    
+        <value>1800000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ACTIVITY_SKIP_THRESHOLD_IN_MILLIS</key>
+        
+    
+        <value>300000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PREVIOUS_N_EVENTS_CHECK_FOR_USAGE_CALCULATION</key>
+        
+    
+        <value>3</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NEXT_N_EVENTS_CHECK_FOR_USAGE_CALCULATION</key>
+        
+    
+        <value>3</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_USAGE_DB_REFRESH_FOR_ABOVE_7_1_7_BEGIN_TIME</key>
+        
+    
+        <value>1700850600000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_MORNING_HOUR_LIST</key>
+        
+    
+        <value>[6,7,8,9,10,11]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NOTIFICATION_BATCHING_DAILY_HOUR_LIST</key>
+        
+    
+        <value>[540,780,1020,1320]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_EVENING_HOUR_LIST</key>
+        
+    
+        <value>[17,18,19,20,21]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_NIGHT_HOUR_LIST</key>
+        
+    
+        <value>[22,23,0,1,2,3,4]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_SMALL_RESPONSE_LENGTH_LIMIT</key>
+        
+    
+        <value>90</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_ACTION_TYPE_MAPPED_APP_IDS</key>
+        
+    
+        <value> [
+            {
+            &quot;actionType&quot;: &quot;notes_app&quot;,
+            &quot;appIds&quot;: [&quot;com.evernote&quot;, &quot;com.microsoft.office.onenote&quot;, &quot;com.google.android.keep&quot;,
+            &quot;notion.id&quot;, &quot;com.samsung.android.app.notes&quot;,
+            &quot;com.socialnmobile.dictapps.notepad.color.note&quot;]
+            },
+            {
+            &quot;actionType&quot;: &quot;todo_app&quot;,
+            &quot;appIds&quot;: [&quot;com.todoist&quot;, &quot;com.microsoft.todos&quot;, &quot;com.google.android.apps.tasks&quot;,
+            &quot;com.anydo&quot;, &quot;com.ticktick.task&quot;, &quot;com.evernote&quot;, &quot;com.microsoft.office.onenote&quot;,
+            &quot;com.google.android.keep&quot;, &quot;notion.id&quot;, &quot;com.samsung.android.app.notes&quot;,
+            &quot;com.socialnmobile.dictapps.notepad.color.note&quot;, &quot;com.asana.app&quot;]
+            },
+            {
+            &quot;actionType&quot;: &quot;meditation_app&quot;,
+            &quot;appIds&quot;: [&quot;com.getsomeheadspace.android&quot;, &quot;com.calm.android&quot;,
+            &quot;com.spotlightsix.zentimerlite2&quot;, &quot;com.simplehabit.simplehabitapp&quot;,
+            &quot;meditofoundation.medito&quot;, &quot;ipnossoft.rma.free&quot;]
+            },
+            {
+            &quot;actionType&quot;: &quot;reading_app&quot;,
+            &quot;appIds&quot;: [&quot;com.amazon.kindle&quot;, &quot;com.audible.application&quot;, &quot;com.goodreads&quot;,
+            &quot;com.scribd.app.reader0&quot;, &quot;com.readwise&quot;, &quot;com.readermobile&quot;]
+            },
+            {
+            &quot;actionType&quot;: &quot;music_app&quot;,
+            &quot;appIds&quot;: [&quot;com.spotify.music&quot;, &quot;com.apple.android.music&quot;,
+            &quot;com.google.android.apps.youtube.music&quot;, &quot;com.soundcloud.android&quot;,
+            &quot;com.bsbportal.music&quot;, &quot;com.jio.media.jiobeats&quot;, &quot;com.gaana&quot;,
+            &quot;com.sec.android.app.music&quot;]
+            },
+            {
+            &quot;actionType&quot;: &quot;calling_app&quot;,
+            &quot;appIds&quot;: [&quot;com.google.android.dialer&quot;, &quot;com.truecaller&quot;,
+            &quot;com.easycontactvdailer.icontact&quot;, &quot;com.google.android.contacts&quot;]
+            }
+            ]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_DEFAULT_PROMPT_TEXT</key>
+        
+    
+        <value>Close the app now, let's both take some rest.</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_PROMPT_DB_UPDATE_DAYS_INTERVAL</key>
+        
+    
+        <value>1</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_USAGE_BUCKET_HIGH</key>
+        
+    
+        <value>[60,1440]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_USAGE_BUCKET_LOW</key>
+        
+    
+        <value>[0,20]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_APP_CATEGORY_MAPPED_APP_IDS</key>
+        
+    
+        <value> [
+            {
+            &quot;category&quot;: &quot;social_media&quot;,
+            &quot;appIds&quot;: [&quot;com.facebook.katana&quot;, &quot;com.instagram.android&quot;, &quot;com.snapchat.android&quot;,
+            &quot;com.twitter.android&quot;, &quot;com.zhiliaoapp.musically&quot;]
+            }
+            ] </value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_MONEY_BASED_PROMPT</key>
+        
+    
+        <value>You have spent ₹{usage_time_in_mins*10} on {app_name} today! (assuming you earn ₹1
+            lakh/month)</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_MONEY_BASED_PROMPT_WEIGHT</key>
+        
+    
+        <value>0.33</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_PROMPT_DB_UPDATE_ENABLED</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_PROMPT_TEXT_ANIMATION_ENABLED</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AI_COACH_PROMPT_TEXT_ANIMATION_SPEED</key>
+        
+    
+        <value>20</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>WEEKLY_MODAL_NOTIFICATION_HOUR</key>
+        
+    
+        <value>6</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ENABLE_REALTIME_OVERLAY</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ENABLE_OVERLAY_NOTIFICATION</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NOTIFICATION_BATCHING_LAST_NOTIFICATION_TIME</key>
+        
+    
+        <value>0</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NOTIFICATION_BATCHING_SCREEN_TITLE_NAME</key>
+        
+    
+        <value>Notification Inbox</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>OVERLAY_WHITELIST_CLASS_NAMES</key>
+        
+    
+        <value>[com.whatsapp.voipcalling.VoipActivityV2,com.whatsapp.calling.ui.VoipActivityV3,org.chromium.chrome.browser.customtabs.TranslucentCustomTabActivity,com.miui.permcenter.privacymanager.SpecialPermissionInterceptActivity]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NOTIFICATION_SNOOZE_TIME_CHECK_MILLIS</key>
+        
+    
+        <value>5000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>UPLOAD_ON_FEEDBACK</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NOTIFICATION_BATCHING_SCREEN_BOTTOM_BAR_TITLE</key>
+        
+    
+        <value>Notifications</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVER_API_CONNECT_TIMEOUT</key>
+        
+    
+        <value>20</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVER_API_READ_TIMEOUT</key>
+        
+    
+        <value>20</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVER_API_WRITE_TIMEOUT</key>
+        
+    
+        <value>20</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NOTIFICATION_BATCHING_FEATURE_ENABLED</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FT_BLOCK_NOTIFICATIONS_ENABLED</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRE_SELECTED_DISTRACTING_APP_LIST</key>
+        
+    
+        <value>com.google.android.youtube,com.instagram.android,com.facebook.katana,com.facebook.lite,com.instagram.lite,com.instagram.barcelona,com.snapchat.android,com.twitter.android,com.ss.android.ugc.trill,com.reddit.frontpage,tv.twitch.android.app,com.linkedin.android,com.zhiliaoapp.musically,app.revanced.android.youtube,app.rvx.android.youtube</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NOTIFICATION_BATCHING_SYNC_FREQUENCY_IN_HOURS</key>
+        
+    
+        <value>2</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_CHANNEL_SYNC_IN_DAILY_USAGE_TO_DB_WORKER</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_KEY_LEVEL_TAGGING_CONFIG</key>
+        
+    
+        <value>[{&quot;appId&quot;:&quot;com.whatsapp&quot;,&quot;channelIds&quot;:[&quot;individual_chat_defaults&quot;, &quot;group_chat_defaults&quot;]},
+            {&quot;appId&quot;:&quot;com.whatsapp.w4b&quot;,&quot;channelIds&quot;:[&quot;individual_chat_defaults&quot;, &quot;group_chat_defaults&quot;]},
+            {&quot;appId&quot;:&quot;com.instagram.android&quot;,&quot;channelIds&quot;:[&quot;ig_direct&quot;]},
+            {&quot;appId&quot;:&quot;com.discord&quot;,&quot;channelIds&quot;:[&quot;directMessages&quot;,&quot;messages&quot;]},
+            {&quot;appId&quot;:&quot;org.telegram.messenger&quot;,&quot;channelIds&quot;:[&quot;private&quot;,&quot;groups&quot;,&quot;channels&quot;]}
+            ]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_SCHEDULED_NOTIFICATION_TITLE</key>
+        
+    
+        <value>Blocked Notifications</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ZEN_MODE_MINIMUM_SESSION_DURATION_IN_MINS</key>
+        
+    
+        <value>30</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ZEN_MODE_BREAK_DURATION_IN_MINS</key>
+        
+    
+        <value>5</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ZEN_MODE_MINIMUM_BREAK_WAIT_TIME_IN_SECS</key>
+        
+    
+        <value>5</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ZEN_MODE_MAXIMUM_BREAK_WAIT_TIME_IN_SECS</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ZEN_MODE_MAXIMUM_BREAKS_ALLOWED_COUNT</key>
+        
+    
+        <value>5</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ZEN_MODE_END_SESSION_WAIT_TIME_IN_SECS</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_WHATSAPP_INSTANT_ALLOWED_IDS</key>
+        
+    
+        <value>[4]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_WHATSAPP_KEY_LEVEL_TAGGING_ALLOWED_CHANNEL_IDS</key>
+        
+    
+        <value>[individual_chat_defaults, group_chat_defaults]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_EMAIL_CHANNEL_GROUPING_ALLOWED_APP_IDS</key>
+        
+    
+        <value>[com.google.android.gm]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_INBOX_NOTIFICATION_EXPIRY_IN_DAYS</key>
+        
+    
+        <value>2</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FALLBACK_PERMISSION_SCREEN_EXPIRY_IN_SECS</key>
+        
+    
+        <value>60</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ZEN_MODE_BREAK_TIME_IN_MILLIS</key>
+        
+    
+        <value>300000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHARABLE_TEXT_CONTENT</key>
+        
+    
+        <value>Block Shorts, Apps, &amp; Notifications to focus your Focus. Join me now:</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_RATING_DIALOG_AFTER_INSTALL_IN_DAYS</key>
+        
+    
+        <value>7</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_IN_APP_SURVEY_ONBOARDING_AFTER_INSTALL_IN_DAYS</key>
+        
+    
+        <value>7</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVICE_HEARTBEAT_CHECK_IN_MS</key>
+        
+    
+        <value>7200000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>BLOCK_SERVICE_HEARTBEAT_CHECK_IN_MS</key>
+        
+    
+        <value>15000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVICE_MAX_TIME_TO_SHOW_WARNING_IN_MS</key>
+        
+    
+        <value>86400000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVICE_IGNORE_WARNING_IN_MS</key>
+        
+    
+        <value>86400000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVICE_FIXING_TITLE</key>
+        
+    
+        <value>App Reminder is not working properly</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVICE_FIXING_DESC</key>
+        
+    
+        <value>Fix your phone settings</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_SERVICE_FIXING_TITLE</key>
+        
+    
+        <value>Notification Scheduling is not working properly</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_SERVICE_FIXING_DESC</key>
+        
+    
+        <value>Fix your phone settings</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVICE_FIXING_ENABLED</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SERVICE_FIXING_NOTIFICATION_FREQUENCY_IN_HRS</key>
+        
+    
+        <value>72</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_SERVICE_FIXING_NOTIFICATION_FREQUENCY_IN_HRS</key>
+        
+    
+        <value>72</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_APP_LIMIT_PROMO</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_APP_LIMIT_PROMO_AFTER_INSTALLED_IN_MINS</key>
+        
+    
+        <value>300</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_LIMIT_SUGGESTION_PERCENTAGE_IN_USAGE</key>
+        
+    
+        <value>75</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>DEFAULT_APP_LIMIT_IN_MINS</key>
+        
+    
+        <value>30</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NOTIFICATION_SERVICE_NOT_RUNNING_THRESHOLD_IN_HOURS</key>
+        
+    
+        <value>12</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_LATEST_N_NOTIFICATIONS_IN_SETTINGS</key>
+        
+    
+        <value>3</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_INBOX_LATEST_N_NOTIFICATIONS_IN_FOLDED_VIEW</key>
+        
+    
+        <value>4</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>YOUTUBE_APP_ID</key>
+        
+    
+        <value>com.google.android.youtube</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>YOUTUBE_HOME_URL</key>
+        
+    
+        <value>https://www.youtube.com/</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>INSTAGRAM_HOME_URL</key>
+        
+    
+        <value>https://instagram.com/</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_UNKNOWN_CHANNEL_ID_APP_ID_PROHIBITED</key>
+        
+    
+        <value>[com.google.android.gm]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NB_INBOX_PRIORITY_SORTING_APP_IDS</key>
+        
+    
+        <value>[com.whatsapp,com.Slack,com.whatsapp.w4b,org.telegram.messenger,com.google.android.gm,com.microsoft.office.outlook]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IN_APP_BLOCK_HEARTBEAT_CHECK_IN_MS</key>
+        
+    
+        <value>3600000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ZEN_MODE_SHARABLE_TEXT_CONTENT</key>
+        
+    
+        <value>Hey there! Join me on focus app to focus without distractions. It's completely free and setup takes less than 2 mins.</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>REWARD_COINS_FOR_NOTIFICATION_BATCHING</key>
+        
+    
+        <value>20</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>REWARD_COINS_FOR_BLOCK_SHORTS</key>
+        
+    
+        <value>20</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>REWARD_COINS_FOR_BLOCK_REELS</key>
+        
+    
+        <value>20</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AVERAGE_SCREEN_TIME_PER_DAY_IN_MINS</key>
+        
+    
+        <value>5</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MAX_GAME_AR_IGNORE_LIMIT_IN_OVERLAY</key>
+        
+    
+        <value>3</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ALLOWED_DEBUG_USER_IDS</key>
+        
+    
+        <value>8e5e158272a081e1,989b3ad7ba943263,b44961bf017fed80</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>REWARD_COINS_BASED_ON_DAY_BEFORE_YESTERDAY_USAGE</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_IN_APP_UPDATE</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>NON_ANDROID_GO_DEVICE_MODELS</key>
+        
+    
+        <value> [
+            &quot;220733SPI&quot;, &quot;5102P&quot;,
+            &quot;DRA-LX5&quot;, &quot;Infinix X612B&quot;, &quot;Infinix X6511B&quot;, &quot;Infinix X6511E&quot;, &quot;Infinix X6512&quot;,
+            &quot;Infinix X6516&quot;, &quot;Infinix X6525&quot;, &quot;Infinix X6525B&quot;, &quot;Infinix X6526&quot;, &quot;Infinix X6532&quot;,
+            &quot;Infinix X657&quot;, &quot;Infinix X657B&quot;, &quot;Infinix X657C&quot;, &quot;Infinix X658E&quot;, &quot;Infinix X680&quot;,
+            &quot;Infinix X6823&quot;, &quot;Infinix X6823C&quot;, &quot;Infinix X688C&quot;, &quot;Lenovo TB-7305F&quot;, &quot;Nokia C1&quot;,
+            &quot;Nokia C12&quot;, &quot;Nokia C12 Pro&quot;, &quot;Nokia C2&quot;, &quot;Nokia C21&quot;, &quot;Nokia C22&quot;, &quot;RKF58&quot;,
+            &quot;RMX3231&quot;, &quot;RMX3581&quot;, &quot;RMX3690&quot;, &quot;Redmi Go&quot;, &quot;SM-A260F&quot;, &quot;SM-A260G&quot;,
+            &quot;SM-J260F&quot;, &quot;SM-J260G&quot;, &quot;SM-J260GU&quot;, &quot;TECNO B1&quot;, &quot;TECNO B1f&quot;, &quot;TECNO BB4k&quot;,
+            &quot;TECNO BD4i&quot;, &quot;TECNO BD4j&quot;, &quot;TECNO BE8&quot;, &quot;TECNO BF6&quot;, &quot;TECNO BF7h&quot;, &quot;TECNO BG6&quot;,
+            &quot;TECNO BG6h&quot;, &quot;TECNO KD6&quot;, &quot;TECNO KE5&quot;, &quot;TECNO KE6&quot;, &quot;TECNO KG5&quot;, &quot;TECNO KG5h&quot;,
+            &quot;TECNO KL4&quot;, &quot;TECNO PR651&quot;, &quot;Vodacom Smart Tab 8&quot;, &quot;iPlay_8T&quot;, &quot;itel A511LQ&quot;,
+            &quot;itel A661L&quot;, &quot;itel A662L&quot;, &quot;itel A662LM&quot;, &quot;itel A663L&quot;, &quot;itel A663LC&quot;, &quot;itel A665L&quot;,
+            &quot;itel A667LP&quot;, &quot;itel L5002&quot;, &quot;itel L5006C&quot;, &quot;itel L6006&quot;, &quot;itel L6502&quot;, &quot;itel L6503&quot;,
+            &quot;itel P10001L&quot;, &quot;itel P651L&quot;, &quot;itel P661W&quot;, &quot;itel P662L&quot;, &quot;itel P665L&quot;
+            ]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MIXPANEL_TOKEN_DEBUG</key>
+        
+    
+        <value>431e65fef3b9b130c3010ac061b4db07</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MIXPANEL_TOKEN_PRODUCTION</key>
+        
+    
+        <value>a5ca197d8d332135856a796251ccf86d</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MIXPANEL_LONG_TERM_DEBUG</key>
+        
+    
+        <value>677620cc0f3a53545dcb54dbfe770c0b</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MIXPANEL_LONG_TERM_PRODUCTION</key>
+        
+    
+        <value>5a14c018ab5f9ff870f06190fce54244</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ANDROID_GO_DEVICE_MODELS</key>
+        
+    
+        <value> [
+            &quot;220733SI&quot;,
+            &quot;23129RN51H&quot;,
+            &quot;23129RN51X&quot;,
+            &quot;2312BPC51H&quot;,
+            &quot;24048RN6CI&quot;,
+            &quot;LS1542QWN&quot;,
+            &quot;RMX1971&quot;,
+            &quot;SM-A032F&quot;,
+            &quot;SM-M013F&quot;,
+            &quot;SM-X900&quot;,
+            &quot;V2118&quot;,
+            &quot;V2217&quot;,
+            &quot;V2236&quot;,
+            &quot;moto e13&quot;,
+            &quot;moto g(20)&quot;,
+            &quot;2302EPCC4I&quot;
+            ]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_YT_HOME_PAGE_DIVERSION_SCREEN</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>GOOGLE_WEB_CLIENT_ID</key>
+        
+    
+        <value>1012477337579-lfmt1atumiufg2nka1advj8g1gom3aui.apps.googleusercontent.com</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_LOGIN_AFTER_LOGOUT</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_NB</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IS_LR_WAIT_TIME_ENABLED</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_LR_REGA_OVERLAY</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FT_END_SESSION_WAIT_TIME</key>
+        
+    
+        <value>0</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SKIP_PERMISSION_ENABLED</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PIP_ENABLED_FOR_USAGE_PERMISSION_XIAOMI</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_FT_MINIMIZED_BUBBLE</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>POST_HOG_TOKEN_DEBUG</key>
+        
+    
+        <value>phc_MZFUoyiBpvNL1HAnZGb59HzYkXUzRYPGt3hZ5jwDYYK</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>POST_HOG_TOKEN_PRODUCTION</key>
+        
+    
+        <value>phc_oLNYcAzyaYDV3Lbv1ZGHN0ERmvifTKAZxNDu2x3PKz7</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>POST_HOG_DEBUG_HOST</key>
+        
+    
+        <value>https://us.i.posthog.com</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>POST_HOG_PRODUCTION_HOST</key>
+        
+    
+        <value>https://us.i.posthog.com</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>focus_TOWN_HALL_GROUP_ID</key>
+        
+    
+        <value>2adc21bb-c4f3-4cd8-9efa-c7aa9936b610</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FT_INACTIVITY_THRESHOLD_HOURS</key>
+        
+    
+        <value>2</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ALLOW_DISABLE_END_FOR_FOCUS_SCHEDULED_SESSION</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_REWARDS_ICON</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PREMIUM_ASSETS_CUTOFF_VERSION_CODE</key>
+        
+    
+        <value>1215</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>BLOCK_LAUNCHER_AS_PRO_CUTOFF_VERSION_CODE</key>
+        
+    
+        <value>1305</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRODUCTIVE_MODE_AND_BLOCKS_FEATURE_AS_PRO_VERSION_CODE</key>
+        
+    
+        <value>1428</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FOCUS_SCHEDULE_PRO_CUTOFF_VERSION_CODE</key>
+        
+    
+        <value>1820</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>MIXPANEL_OPT_IN_CUTOFF_VERSION_CODE</key>
+        
+    
+        <value>1429</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>EDUCATION_NOTIFICATION_EXPIRY_IN_MINS</key>
+        
+    
+        <value>60</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>EDUCATION_NON_INTERACTION_PERIOD_IN_DAYS</key>
+        
+    
+        <value>7</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>DAILY_ENGAGEMENT_NON_INTERACTION_PERIOD_IN_DAYS</key>
+        
+    
+        <value>7</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>REINSTALL_SURVEY_ELIGIBILITY_WINDOW_IN_MINS</key>
+        
+    
+        <value>1440</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_REINSTALL_SURVEY</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_SUBSCRIPTION_WELCOME_EXPIRY_MINUTES</key>
+        
+    
+        <value>120</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_SUBSCRIPTION_EARLY_BELIEVER_EXPIRY_MINUTES</key>
+        
+    
+        <value>120</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_SUBSCRIPTION_SPECIAL_OFFER_EXPIRY_MINUTES</key>
+        
+    
+        <value>180</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_SUBSCRIPTION_FOCUS_WIZARD_OFFER_EXPIRY_MINUTES</key>
+        
+    
+        <value>120</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_SUBSCRIPTION_BACK_PRESS_OFFER_BUFFER_MINUTES</key>
+        
+    
+        <value>60</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_SUBSCRIPTION_BACK_PRESS_OFFER_EXPIRY_MINUTES</key>
+        
+    
+        <value>60</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>BACK_PRESS_OFFER_COOLDOWN_IN_MINS</key>
+        
+    
+        <value>1440</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_SUBSCRIPTION_WELCOME_OFFERING_IDENTIFIER</key>
+        
+    
+        <value>pro-welcome</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_SUBSCRIPTION_EARLY_BELIEVER_OFFERING_IDENTIFIER</key>
+        
+    
+        <value>pro-early-bird</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_SUBSCRIPTION_SPECIAL_OFFERING_IDENTIFIER</key>
+        
+    
+        <value>pro-special</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FOCUS_BADGE_OFFER_DAYS_UNTIL_FIRST_SHOW</key>
+        
+    
+        <value>1</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FOCUS_BADGE_OFFER_DAYS_BETWEEN_SHOWS</key>
+        
+    
+        <value>2</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IN_HOUSE_AD_VIDEO_URLS</key>
+        
+    
+        <value>https://puraa.focusapp.ai/in-house-ads/ft_strict_mode_ad_rounded.mp4,https://puraa.focusapp.ai/in-house-ads/ft_pomodoro_ad.mp4,https://puraa.focusapp.ai/in-house-ads/ft_study_mode.mp4</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IN_HOUSE_ADS_CONFIG</key>
+        
+    
+        <value>[{&quot;type&quot;:&quot;video&quot;,&quot;rank&quot;:1,&quot;url&quot;:&quot;https://puraa.focusapp.ai/in-house-ads/ft_study_mode.mp4&quot;,&quot;minVersion&quot;:1428},{&quot;type&quot;:&quot;video&quot;,&quot;rank&quot;:2,&quot;url&quot;:&quot;https://puraa.focusapp.ai/in-house-ads/ft_pomodoro_ad.mp4&quot;,&quot;minVersion&quot;:null},{&quot;type&quot;:&quot;video&quot;,&quot;rank&quot;:3,&quot;url&quot;:&quot;https://puraa.focusapp.ai/in-house-ads/ft_strict_mode_ad_rounded.mp4&quot;,&quot;minVersion&quot;:1215},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:4,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/ft_youtube_study_mode.lottie&quot;,&quot;minVersion&quot;:1428},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:5,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/ft_strict_mode.lottie&quot;,&quot;minVersion&quot;:1215},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:6,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/focus_pomodoro.lottie&quot;,&quot;minVersion&quot;:null},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:7,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/FT_block_phone_launcher.lottie&quot;,&quot;minVersion&quot;:1305},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:8,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/ft_chrome_study_mode.lottie&quot;,&quot;minVersion&quot;:1428},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:9,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/block_shorts.lottie&quot;,&quot;minVersion&quot;:1428},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:10,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/block_notifications.lottie&quot;,&quot;minVersion&quot;:1428},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:11,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/uninstall_window.lottie&quot;,&quot;minVersion&quot;:null},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:12,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/split_screen.lottie&quot;,&quot;minVersion&quot;:null},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:13,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/popup_window.lottie&quot;,&quot;minVersion&quot;:null},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:14,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/strict_mode_apps.lottie&quot;,&quot;minVersion&quot;:1305},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:15,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/strict_mode_websites.lottie&quot;,&quot;minVersion&quot;:1305},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:16,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/focus_music.lottie&quot;,&quot;minVersion&quot;:null},{&quot;type&quot;:&quot;lottie&quot;,&quot;rank&quot;:17,&quot;url&quot;:&quot;https://puraa.focusapp.ai/pro-benifits/focus_themes.lottie&quot;,&quot;minVersion&quot;:null}]</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IN_HOUSE_AD_SKIP_DELAY_SECONDS</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IN_HOUSE_AD_INITIAL_DELAY_MINUTES</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IN_HOUSE_AD_MAX_DELAY_MINUTES</key>
+        
+    
+        <value>120</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PAYMENT_FAILURE_NUDGE_INITIAL_DELAY_MINUTES</key>
+        
+    
+        <value>2</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PAYMENT_FAILURE_NUDGE_MAX_DELAY_MINUTES</key>
+        
+    
+        <value>8</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>AFTER_FOCUS_SCHEDULE_NUDGE_ENABLED</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>STUDY_GOAL_OB_SCHEDULE_STEP_ENABLED</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>LAUNCHER_PERMISSION_THRESHOLD_COUNT</key>
+        
+    
+        <value>3</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>LAUNCHER_PERMISSION_TIME_THRESHOLD_IN_MILLIS</key>
+        
+    
+        <value>172800000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>INVITE_REWARD_FIRST_MILESTONE_DURATION_MILLIS</key>
+        
+    
+        <value>604800000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>INVITE_REWARD_SECOND_MILESTONE_DURATION_MILLIS</key>
+        
+    
+        <value>2592000000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>INVITE_REWARD_THIRD_MILESTONE_DURATION_MILLIS</key>
+        
+    
+        <value>7776000000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>INVITE_REWARD_FIRST_MILESTONE_INVITE_COUNT</key>
+        
+    
+        <value>5</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>INVITE_REWARD_SECOND_MILESTONE_INVITE_COUNT</key>
+        
+    
+        <value>10</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>INVITE_REWARD_THIRD_MILESTONE_INVITE_COUNT</key>
+        
+    
+        <value>15</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_LAUNCHER_PERMISSION_PROMPT</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PAYMENT_PROVIDER</key>
+        
+    
+        <value>razorpay</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>BACKUP_MIN_DELAY_SECS</key>
+        
+    
+        <value>600</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>BACKUP_MAX_DELAY_SECS</key>
+        
+    
+        <value>1200</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>BACKUP_HEARTBEAT_MIN_INTERVAL_SECS</key>
+        
+    
+        <value>21600</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_RATING</key>
+        
+    
+        <value>4.6</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_PAYMENT_APP_CTA_ON_PAYWALL</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FT_OVERLAY_OFFER_BANNER</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRO_CTA</key>
+        
+    
+        <value/>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_NEW_PRICING_UI</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_PRICING_UI_EXPERIMENT_V2</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_PRICING_UI_EXPERIMENT_V4</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PART_OF_LUCKY_DRAW</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PART_OF_LUCKY_DRAW_V2</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOULD_SHOW_BACK_PRESS_OFFER</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOULD_SHOW_MONTHLY_BACK_PRESS_OFFER</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOULD_SHOW_SUBSCRIPTION_INFO_SCREEN</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOULD_SHOW_POMODORO_DOT</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_YT_HOME_PAGE_DIVERSION_SCREEN_V2</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_OFFER_ON_APP_OPEN</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>TEST_RC_VALUE</key>
+        
+    
+        <value>DEFAULT_LOCAL</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>IOS_SHARE_URL</key>
+        
+    
+        <value>https://join.focusapp.ai/ios</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>APP_OPEN_OFFER_BUFFER_TIME_IN_MINS</key>
+        
+    
+        <value>30</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>SHOW_BUMP_STYLE_PERMISSIONS</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PART_OF_OFFER_PRICE_EXPERIMENT</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>ONE_TIME_PAYMENT_WAIT_TIME_IN_MILLIS</key>
+        
+    
+        <value>5000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PART_OF_ONE_TIME_PAYMENT_EXPERIMENT</key>
+        
+    
+        <value>false</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PART_OF_UPI_INTENT_EXPERIMENT</key>
+        
+    
+        <value>DEFAULT_LOCAL</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FOCUS_TIMER_REVENUE_EXPERIMENT</key>
+        
+    
+        <value>DEFAULT_LOCAL</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>CHECKOUT_OPTIMIZATION_TTL_IN_MILLIS</key>
+        
+    
+        <value>300000</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PART_OF_PROVIDER_EXPERIMENT</key>
+        
+    
+        <value>DEFAULT_LOCAL</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>FREE_TRIAL_META_CAMPAIGN_IDS</key>
+        
+    
+        <value>120248865500600393</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRICING_META_CAMPAIGN_IDS</key>
+        
+    
+        <value>120249058973620393</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>PRICING_META_CAMPAIGN_IDS_V2</key>
+        
+    
+        <value>120249088710010393</value>
+        
+  
+    </entry>
+    
+  
+    <entry>
+        
+    
+        <key>GIFT_LUCK_ENABLED_V1</key>
+        
+    
+        <value>true</value>
+        
+  
+    </entry>
+    
+
+</defaults>

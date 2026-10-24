@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<ad-services-config>
+    
+  
+    <attribution allowAllToAccess="true"/>
+    
+  
+    <custom-audiences allowAllToAccess="true"/>
+    
+  
+    <topics allowAllToAccess="true"/>
+    
+
+</ad-services-config>
