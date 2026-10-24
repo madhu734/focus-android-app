@@ -26,11 +26,25 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        create("release") {
+            storeFile = file("release-key.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "FocusProd2026!"
+            keyAlias = System.getenv("KEY_ALIAS") ?: "focus_prod_key"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "FocusProd2026!"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
     }
 
     buildTypes {
         release {
+            isDebuggable = false
             isMinifyEnabled = false
+            isShrinkResources = false
+            if (file("release-key.jks").exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -39,6 +53,12 @@ android {
         debug {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("debugConfig")
+        }
+    }
+
+    splits {
+        abi {
+            isEnable = false
         }
     }
 

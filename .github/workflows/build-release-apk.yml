@@ -1,0 +1,78 @@
+name: Build & Release Signed APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for gradlew
+        run: |
+          if [ -f "./gradlew" ]; then
+            chmod +x gradlew
+          fi
+
+      - name: Generate Production Release Keystore (RSA 2048)
+        run: |
+          rm -f app/release-key.jks
+          keytool -genkeypair -v \
+            -keystore app/release-key.jks \
+            -alias focus_prod_key \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass "FocusProd2026!" \
+            -keypass "FocusProd2026!" \
+            -dname "CN=FocusApp, OU=Mobile, O=Personal, L=Dhaka, S=Dhaka, C=BD"
+
+      - name: Build Signed Universal Release APK
+        env:
+          KEYSTORE_PASSWORD: "FocusProd2026!"
+          KEY_ALIAS: "focus_prod_key"
+          KEY_PASSWORD: "FocusProd2026!"
+        run: |
+          if [ -f "./gradlew" ]; then
+            ./gradlew assembleRelease --no-daemon
+          else
+            gradle assembleRelease --no-daemon
+          fi
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "Built APK found at: $APK_PATH"
+          cp "$APK_PATH" Focus-Signed-Release.apk
+
+      - name: Upload Signed APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Focus-Signed-Release
+          path: Focus-Signed-Release.apk
+          if-no-files-found: error
+
+      - name: Publish to GitHub Releases (v1.0.0)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "Focus Production Release (v1.0.0)"
+          body: "Automated V1/V2/V3 Signed Universal Production APK (`Focus-Signed-Release.apk`)."
+          files: Focus-Signed-Release.apk
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
