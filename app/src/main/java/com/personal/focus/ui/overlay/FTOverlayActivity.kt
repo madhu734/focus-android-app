@@ -1,5 +1,6 @@
 package com.personal.focus.ui.overlay
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
@@ -25,8 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,15 +35,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.personal.focus.FocusApplication
+import com.personal.focus.data.repository.FocusStateRepository
 import com.personal.focus.ui.HomePageActivity
 import com.personal.focus.ui.theme.DarkSurface
 import com.personal.focus.ui.theme.DimTransparent
+import com.personal.focus.ui.theme.FocusTheme
 import com.personal.focus.ui.theme.GiantTimerTextStyle
 import com.personal.focus.ui.theme.NavBarColor
 import com.personal.focus.ui.theme.Neutral100
 import com.personal.focus.ui.theme.Neutral90
 import com.personal.focus.ui.theme.PrimaryGreen
-import com.personal.focus.ui.theme.FocusTheme
 import com.personal.focus.ui.theme.SecondaryOrange
 
 /**
@@ -53,8 +53,22 @@ import com.personal.focus.ui.theme.SecondaryOrange
  */
 class FTOverlayActivity : ComponentActivity() {
 
+    override fun attachBaseContext(newBase: Context?) {
+        if (newBase != null) {
+            try {
+                val config = Configuration(newBase.resources.configuration)
+                config.fontScale = 1.0f
+                super.attachBaseContext(newBase.createConfigurationContext(config))
+                return
+            } catch (_: Throwable) {
+            }
+        }
+        super.attachBaseContext(newBase)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FocusApplication.ensureInitialized(this)
         configureWindow()
 
         setContent {
@@ -67,29 +81,33 @@ class FTOverlayActivity : ComponentActivity() {
     }
 
     private fun configureWindow() {
-        val configuration = Configuration(resources.configuration)
-        configuration.fontScale = 1.0f
-        applyOverrideConfiguration(configuration)
-
-        window.navigationBarColor = NavBarColor.toArgb()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-        } else {
+        try {
             @Suppress("DEPRECATION")
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            )
+            overridePendingTransition(0, 0)
+            window.navigationBarColor = NavBarColor.toArgb()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+            } else {
+                @Suppress("DEPRECATION")
+                window.addFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                )
+            }
+        } catch (_: Throwable) {
         }
     }
 
     private fun returnToFocus() {
-        val intent = Intent(this, HomePageActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        try {
+            val intent = Intent(this, HomePageActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            startActivity(intent)
+        } catch (_: Throwable) {
         }
-        startActivity(intent)
         finish()
     }
 
@@ -103,9 +121,8 @@ class FTOverlayActivity : ComponentActivity() {
 fun FTOverlayScreen(
     onDismiss: () -> Unit
 ) {
-    val app = try { FocusApplication.instance } catch (e: Exception) { null }
-    val session by (app?.focusTimerRepository?.activeSession?.collectAsState() ?: remember { mutableStateOf(null) })
-    val remainingMillis by (app?.focusTimerRepository?.remainingTimeMillis?.collectAsState() ?: remember { mutableStateOf(0L) })
+    val session by FocusStateRepository.activeSession.collectAsState()
+    val remainingMillis by FocusStateRepository.remainingTimeMillis.collectAsState()
 
     val minutes = (remainingMillis / 1000L) / 60
     val seconds = (remainingMillis / 1000L) % 60

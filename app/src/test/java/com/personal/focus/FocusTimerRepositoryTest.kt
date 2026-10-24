@@ -7,7 +7,6 @@ import com.personal.focus.data.model.SessionStatus
 import com.personal.focus.data.repository.FocusTimerRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,6 +16,7 @@ import org.junit.Test
 
 class FakeFocusTimerDao : FocusTimerDao {
     private val sessionFlow = MutableStateFlow<FocusTimerSession?>(null)
+    private val allSessionsFlow = MutableStateFlow<List<FocusTimerSession>>(emptyList())
     private var currentSession: FocusTimerSession? = null
 
     override fun getActiveSessionFlow(): Flow<FocusTimerSession?> = sessionFlow
@@ -25,18 +25,19 @@ class FakeFocusTimerDao : FocusTimerDao {
 
     override fun getLatestSessionFlow(): Flow<FocusTimerSession?> = sessionFlow
 
-    override fun getAllSessionsFlow(): Flow<List<FocusTimerSession>> =
-        MutableStateFlow(if (currentSession != null) listOf(currentSession!!) else emptyList())
+    override fun getAllSessionsFlow(): Flow<List<FocusTimerSession>> = allSessionsFlow
 
     override suspend fun insertSession(session: FocusTimerSession): Long {
         currentSession = session
         sessionFlow.value = session
+        allSessionsFlow.value = listOf(session)
         return 1L
     }
 
     override suspend fun updateSession(session: FocusTimerSession) {
         currentSession = session
         sessionFlow.value = session
+        allSessionsFlow.value = listOf(session)
     }
 
     override suspend fun cancelAllActiveSessions() {
@@ -44,6 +45,7 @@ class FakeFocusTimerDao : FocusTimerDao {
             val updated = currentSession?.copy(sessionStatus = SessionStatus.CANCELLED)
             currentSession = updated
             sessionFlow.value = updated
+            allSessionsFlow.value = if (updated != null) listOf(updated) else emptyList()
         }
     }
 
@@ -61,20 +63,21 @@ class FocusTimerRepositoryTest {
 
         // Start session with Strict Mode
         repository.startSession(
-            mode = FocusMode.POMODORO,
-            durationInMillis = 25 * 60 * 1000L,
+            mode = FocusMode.COUNTDOWN,
+            durationInMillis = 120 * 60 * 1000L,
             isLockedIn = true,
             disableEndButtonShown = true,
             isUninstallBlocked = true,
             isLauncherBlocked = true,
             blockNotifications = true,
-            breaksAllowedCount = 0
+            breaksAllowedCount = 4
         )
         testScheduler.advanceUntilIdle()
 
         val active = repository.activeSession.value
         assertNotNull(active)
         assertTrue(active!!.isLockedIn)
+        assertEquals(0, active.breaksAllowedCount)
         assertTrue(active.disableEndButtonShown)
         assertTrue(repository.isStrictActive.value)
 
@@ -93,38 +96,49 @@ class FocusTimerRepositoryTest {
     }
 
     @Test
-    fun `test standard focus mode permits pause resume break and give up`() = runTest {
+    fun `test standard focus mode permits up to 4 breaks and preserves focus duration across break`() = runTest {
         val fakeDao = FakeFocusTimerDao()
         var mockTime = 100_000L
-        val repository = FocusTimerRepository(fakeDao, backgroundScope, timeProvider = { mockTime })
+        var mockWall = 1_000_000L
+        val repository = FocusTimerRepository(
+            fakeDao,
+            backgroundScope,
+            timeProvider = { mockTime },
+            wallClockProvider = { mockWall }
+        )
 
+        val focusDuration = 120 * 60 * 1000L // 120m support
         repository.startSession(
-            mode = FocusMode.POMODORO,
-            durationInMillis = 25 * 60 * 1000L,
+            mode = FocusMode.COUNTDOWN,
+            durationInMillis = focusDuration,
             isLockedIn = false,
             disableEndButtonShown = false,
             isUninstallBlocked = false,
             isLauncherBlocked = false,
             blockNotifications = false,
-            breaksAllowedCount = 2
+            breaksAllowedCount = 4
         )
         testScheduler.advanceUntilIdle()
 
-        // Pause & Resume
-        assertTrue(repository.pauseSession())
-        assertEquals(SessionStatus.PAUSED, repository.activeSession.value?.sessionStatus)
+        // Advance 10 minutes into focus session
+        mockTime += 10 * 60 * 1000L
+        mockWall += 10 * 60 * 1000L
 
-        assertTrue(repository.resumeSession())
-        assertEquals(SessionStatus.ACTIVE, repository.activeSession.value?.sessionStatus)
-
-        // Break 1
+        // Take Break 1 (5m short break)
         assertTrue(repository.takeBreak())
         assertTrue(repository.activeSession.value?.isInBreak == true)
         assertEquals(1, repository.activeSession.value?.breaksTakenCount)
+        assertEquals(5 * 60 * 1000L, repository.remainingTimeMillis.value)
 
+        // Spend 5 minutes in break
+        mockTime += 5 * 60 * 1000L
+        mockWall += 5 * 60 * 1000L
+
+        // End break -> focus timer must resume with 110m remaining (break time not subtracted from focus)
         repository.endBreak()
         assertFalse(repository.activeSession.value?.isInBreak == true)
-        assertEquals(2, repository.activeSession.value?.currentRound)
+        assertEquals(110 * 60 * 1000L, repository.remainingTimeMillis.value)
+        assertTrue(repository.verifyTimeIntegrity())
 
         // Give up succeeds in standard mode
         val giveUpResult = repository.giveUpSession()

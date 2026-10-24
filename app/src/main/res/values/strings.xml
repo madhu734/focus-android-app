@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">Focus</string>
+    <string name="app_name">এই শালা তোর সিলেবাস শেষ হইসে?</string>
     <string name="accessibility_service_description">Focus monitors app usage and YouTube videos in real time to prevent distractions, block Shorts, and protect against settings tampering during active focus sessions.</string>
     <string name="device_admin_description">Used exclusively to prevent accidental or compulsive uninstallation during active Strict Mode focus sessions.</string>
     <string name="device_admin_disable_warning">Strict Mode is currently active! Deactivating Device Admin will violate your focus commitment and is restricted until your session finishes.</string>
     <string name="monitoring_notification_channel">Focus Monitoring Service</string>
-    <string name="monitoring_notification_title">Focus Watchdog</string>
+    <string name="monitoring_notification_title">এই শালা তোর সিলেবাস শেষ হইসে?</string>
     <string name="monitoring_notification_text">Protecting your attention and monitoring distractions</string>
     <string name="session_completed_title">Session Completed!</string>
     <string name="session_completed_text">Great job staying focused!</string>

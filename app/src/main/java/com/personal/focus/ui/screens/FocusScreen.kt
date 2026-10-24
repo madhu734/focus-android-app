@@ -2,11 +2,11 @@ package com.personal.focus.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.personal.focus.FocusApplication
 import com.personal.focus.data.model.FocusMode
 import com.personal.focus.data.model.SessionStatus
+import com.personal.focus.data.repository.FocusStateRepository
 import com.personal.focus.ui.components.PermissionChecklistCard
 import com.personal.focus.ui.launcher.ProxyLauncherActivity
 import com.personal.focus.ui.overlay.AppBlockOverlayManager
@@ -69,18 +71,19 @@ import kotlinx.coroutines.launch
 fun FocusScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val app = FocusApplication.instance
-    val focusRepo = app.focusTimerRepository
-    val ytRepo = app.youTubeStudyRepository
+    remember(context) { FocusApplication.ensureInitialized(context) }
+    val focusRepo = FocusStateRepository.focusTimerRepository ?: FocusApplication.instance.focusTimerRepository
+    val ytRepo = FocusStateRepository.youTubeStudyRepository ?: FocusApplication.instance.youTubeStudyRepository
 
     val activeSession by focusRepo.activeSession.collectAsState()
     val remainingMillis by focusRepo.remainingTimeMillis.collectAsState()
     val isStudyModeActive by ytRepo.isStudyModeEnabled.collectAsState()
 
-    var selectedMode by remember { mutableStateOf(FocusMode.POMODORO) }
+    // Default mode is COUNTDOWN (first option on the left)
+    var selectedMode by remember { mutableStateOf(FocusMode.COUNTDOWN) }
     var durationMinutes by remember { mutableLongStateOf(25L) }
 
-    // Ultra Focus Settings States
+    // Ultra Focus Settings & Break States
     var isLockedIn by remember { mutableStateOf(false) }
     var disableEndButton by remember { mutableStateOf(false) }
     var isUninstallBlocked by remember { mutableStateOf(true) }
@@ -99,25 +102,69 @@ fun FocusScreen() {
             .fillMaxSize()
             .background(Neutral0)
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // =========================================================================
-        // PERMISSION SETUP CHECKLIST CARD
+        // PERMISSION SETUP CHECKLIST CARD (Compact)
         // =========================================================================
         PermissionChecklistCard()
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        Text(
-            text = "INSTANT FOCUS",
-            color = PrimaryGreen,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
-            letterSpacing = 1.sp
-        )
+        // =========================================================================
+        // HEADER ROW: INSTANT FOCUS (Left) + Ultra Focus ⚙ (Right, #83D65C)
+        // =========================================================================
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "INSTANT FOCUS",
+                    color = PrimaryGreen,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    letterSpacing = 1.sp
+                )
+                if (isLockedIn) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Gold)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "STRICT",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp
+                        )
+                    }
+                }
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = { showUltraFocusSheet = true },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier
+                    .height(32.dp)
+                    .testTag("configure_ultra_focus_button")
+            ) {
+                Text(
+                    text = "Ultra Focus ⚙",
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         if (activeSession != null && (activeSession?.sessionStatus == SessionStatus.ACTIVE || activeSession?.sessionStatus == SessionStatus.PAUSED)) {
             // =========================================================================
@@ -127,6 +174,7 @@ fun FocusScreen() {
             val minutes = (remainingMillis / 1000L) / 60
             val seconds = (remainingMillis / 1000L) % 60
             val formattedTime = String.format("%02d:%02d", minutes, seconds)
+            val breaksRemaining = (session.breaksAllowedCount - session.breaksTakenCount).coerceAtLeast(0)
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -136,12 +184,12 @@ fun FocusScreen() {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
+                        .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     if (session.isInBreak) {
                         Text(
-                            text = "BREAK TIME",
+                            text = "SHORT BREAK TIME",
                             color = SecondaryOrange,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
@@ -155,7 +203,7 @@ fun FocusScreen() {
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
                         text = formattedTime,
@@ -163,12 +211,31 @@ fun FocusScreen() {
                         color = if (session.isInBreak) SecondaryOrange else PrimaryGreen
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Mode: ${session.mode.name} • Round ${session.currentRound} / ${session.roundsPerCycle}",
+                        text = if (session.mode == FocusMode.POMODORO) {
+                            "Mode: ${session.mode.name} • Round ${session.currentRound} / ${session.roundsPerCycle}"
+                        } else {
+                            "Mode: ${session.mode.name}"
+                        },
                         color = Neutral90,
                         fontSize = 14.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = if (session.isLockedIn) {
+                            "Breaks: Locked (Strict Mode)"
+                        } else if (session.isInBreak) {
+                            "Break ${session.breaksTakenCount} of ${session.breaksAllowedCount} active • Focus resumes automatically"
+                        } else {
+                            "Breaks Remaining: $breaksRemaining / ${session.breaksAllowedCount}"
+                        },
+                        color = if (session.isInBreak) SecondaryOrange else Neutral90,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
                     )
 
                     if (session.isLockedIn) {
@@ -181,45 +248,63 @@ fun FocusScreen() {
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Session Controls
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (!session.isInBreak && session.breaksTakenCount < session.breaksAllowedCount && !session.isLockedIn) {
+                        if (!session.isInBreak && breaksRemaining > 0 && !session.isLockedIn) {
                             Button(
                                 onClick = {
                                     scope.launch {
                                         val took = focusRepo.takeBreak()
-                                        if (!took) {
+                                        if (took) {
+                                            AppBlockOverlayManager.dismissOverlay()
+                                        } else {
                                             Toast.makeText(context, "No breaks remaining", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Neutral10),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("take_break_button"),
+                                colors = ButtonDefaults.buttonColors(containerColor = SecondaryOrange),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text(text = "Take Break", color = Neutral100)
+                                Text(
+                                    text = "Take Break ($breaksRemaining)",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
                             }
                         } else if (session.isInBreak) {
                             Button(
                                 onClick = { scope.launch { focusRepo.endBreak() } },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("end_break_button"),
                                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text(text = "End Break", color = Color.Black, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "End Break & Resume Focus",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
                             }
                         }
 
-                        if (!session.isLockedIn) {
+                        if (!session.isLockedIn && !session.isInBreak) {
                             if (session.sessionStatus == SessionStatus.ACTIVE) {
                                 Button(
                                     onClick = { scope.launch { focusRepo.pauseSession() } },
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("pause_session_button"),
                                     colors = ButtonDefaults.buttonColors(containerColor = Neutral10),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
@@ -228,7 +313,9 @@ fun FocusScreen() {
                             } else {
                                 Button(
                                     onClick = { scope.launch { focusRepo.resumeSession() } },
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("resume_session_button"),
                                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
@@ -258,7 +345,9 @@ fun FocusScreen() {
                                     }
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("give_up_button"),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(text = "Give Up / End Session", color = Neutral90)
@@ -276,10 +365,9 @@ fun FocusScreen() {
 
         } else {
             // =========================================================================
-            // TIMER SETUP & GIANT DIGITS PREVIEW (Anton Typography)
+            // COMPACT TIMER SETUP & GIANT DIGITS PREVIEW (Fits on 1 screen without scroll)
             // =========================================================================
 
-            // Preview Display
             val previewMinutes = if (selectedMode == FocusMode.STOPWATCH) 0L else durationMinutes
             val previewSeconds = 0L
             val previewFormatted = String.format("%02d:%02d", previewMinutes, previewSeconds)
@@ -287,35 +375,38 @@ fun FocusScreen() {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = when (selectedMode) {
-                            FocusMode.POMODORO -> "POMODORO INTERVAL"
-                            FocusMode.STOPWATCH -> "STOPWATCH COUNT-UP"
                             FocusMode.COUNTDOWN -> "COUNTDOWN TIMER"
+                            FocusMode.STOPWATCH -> "STOPWATCH COUNT-UP"
+                            FocusMode.POMODORO -> "POMODORO INTERVAL"
                         },
                         color = Neutral90,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         letterSpacing = 1.sp
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
 
                     Text(
                         text = if (selectedMode == FocusMode.STOPWATCH) "00:00" else previewFormatted,
-                        style = GiantTimerTextStyle,
+                        style = GiantTimerTextStyle.copy(
+                            fontSize = 60.sp,
+                            lineHeight = 64.sp
+                        ),
                         color = PrimaryGreen
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
 
                     Text(
                         text = if (selectedMode == FocusMode.STOPWATCH) {
@@ -324,31 +415,32 @@ fun FocusScreen() {
                             "$durationMinutes minutes focused work"
                         },
                         color = Neutral90,
-                        fontSize = 13.sp
+                        fontSize = 12.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // 1. Mode Selector
+            // 1. Mode Selector: COUNTDOWN (left) | STOPWATCH (middle) | POMODORO (right)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .background(DarkSurface)
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                listOf(FocusMode.POMODORO, FocusMode.STOPWATCH, FocusMode.COUNTDOWN).forEach { mode ->
+                listOf(FocusMode.COUNTDOWN, FocusMode.STOPWATCH, FocusMode.POMODORO).forEach { mode ->
                     val isSelected = selectedMode == mode
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(if (isSelected) PrimaryGreen else Color.Transparent)
                             .clickable { selectedMode = mode }
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = 10.dp)
+                            .testTag("mode_tab_${mode.name.lowercase()}"),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -361,28 +453,28 @@ fun FocusScreen() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // 2. Duration Selector (for Pomodoro / Countdown)
+            // 2. Duration Selector (for Countdown / Pomodoro): 15m, 25m, 45m, 60m, 90m, 120m
             if (selectedMode != FocusMode.STOPWATCH) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                         Text(
                             text = "FOCUS DURATION",
                             color = Neutral90,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            listOf(15L, 25L, 45L, 60L, 90L).forEach { mins ->
+                            listOf(15L, 25L, 45L, 60L, 90L, 120L).forEach { mins ->
                                 val isSelected = durationMinutes == mins
                                 Box(
                                     modifier = Modifier
@@ -390,86 +482,117 @@ fun FocusScreen() {
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(if (isSelected) PrimaryGreen else Neutral10)
                                         .clickable { durationMinutes = mins }
-                                        .padding(vertical = 10.dp),
+                                        .padding(vertical = 9.dp)
+                                        .testTag("duration_${mins}m"),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = "${mins}m",
                                         color = if (isSelected) Color.Black else Neutral100,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp
+                                        fontSize = 13.sp
                                     )
                                 }
                             }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // 3. Ultra Focus Settings Entry Card
+            // 3. Break Selection Card (0 to 4 Short Breaks, locked when Strict Mode is ON)
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showUltraFocusSheet = true },
+                modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                shape = RoundedCornerShape(20.dp)
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "ULTRA FOCUS SETTINGS",
-                                color = PrimaryGreen,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                            if (isLockedIn) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(Gold)
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "STRICT",
-                                        color = Color.Black,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 9.sp
-                                    )
-                                }
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "BREAKS ALLOWED (5M SHORT BREAK)",
+                            color = Neutral90,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (isLockedIn) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Gold)
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "LOCKED IN STRICT MODE",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 9.sp
+                                )
                             }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = buildString {
-                                append(if (isLockedIn) "Strict: ON • " else "Strict: OFF • ")
-                                append(if (isStudyModeActive) "YouTube Study: ON • " else "YT Study: OFF • ")
-                                append(if (isUninstallBlocked) "Shield: ON" else "Shield: OFF")
-                            },
-                            color = Neutral90,
-                            fontSize = 12.sp
-                        )
                     }
-                    Button(
-                        onClick = { showUltraFocusSheet = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Neutral10),
-                        shape = RoundedCornerShape(10.dp)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val effectiveBreaks = if (isLockedIn) 0 else breaksAllowedCount
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(text = "Configure", color = PrimaryGreen, fontSize = 12.sp)
+                        listOf(0, 1, 2, 3, 4).forEach { count ->
+                            val isSelected = effectiveBreaks == count
+                            val isEnabled = !isLockedIn
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(
+                                        when {
+                                            isSelected && isEnabled -> PrimaryGreen
+                                            isSelected && !isEnabled -> Neutral10
+                                            else -> Neutral10
+                                        }
+                                    )
+                                    .clickable(enabled = isEnabled) {
+                                        breaksAllowedCount = count
+                                    }
+                                    .padding(vertical = 8.dp)
+                                    .testTag("break_option_$count"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "$count",
+                                    color = when {
+                                        isSelected && isEnabled -> Color.Black
+                                        isSelected && !isEnabled -> Gold
+                                        !isEnabled -> Neutral90.copy(alpha = 0.45f)
+                                        else -> Neutral100
+                                    },
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = when {
+                            isLockedIn -> "Breaks are locked to 0 while Strict Mode is enabled"
+                            effectiveBreaks == 0 -> "No breaks allowed during this focus session"
+                            else -> "Up to $effectiveBreaks short break${if (effectiveBreaks > 1) "s" else ""} (5m each); focus resumes automatically"
+                        },
+                        color = if (isLockedIn) Gold else Neutral90,
+                        fontSize = 11.sp
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Start Focus Button
             Button(
@@ -493,15 +616,16 @@ fun FocusScreen() {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(52.dp)
+                    .testTag("start_focus_session_button"),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
                     text = "START FOCUS SESSION",
                     color = Color.Black,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     letterSpacing = 1.sp
                 )
             }
@@ -556,6 +680,8 @@ fun FocusScreen() {
                             disableEndButton = true
                             breaksAllowedCount = 0
                             isUninstallBlocked = true
+                        } else if (breaksAllowedCount == 0) {
+                            breaksAllowedCount = 1
                         }
                     }
                 )

@@ -4,7 +4,7 @@ import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.personal.focus.FocusApplication
-import com.personal.focus.data.model.SessionStatus
+import com.personal.focus.data.repository.FocusStateRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -40,23 +40,19 @@ class NotificationListener : NotificationListenerService() {
             return
         }
 
-        // 3. Query active focus session blocking policy
+        // 3. Query active focus session blocking policy via FocusStateRepository
         serviceScope.launch {
             try {
-                val app = FocusApplication.instance
-                val activeSession = app.focusTimerRepository.activeSession.value
-                val isFocusActive = activeSession != null &&
-                        activeSession.sessionStatus == SessionStatus.ACTIVE &&
-                        !activeSession.isInBreak
+                FocusApplication.ensureInitialized(applicationContext)
+                val activeSession = FocusStateRepository.activeSession.value
+                val isFocusActive = FocusStateRepository.isSessionActiveNow()
 
                 if (isFocusActive && activeSession?.blockNotifications == true) {
-                    val blockRepo = app.appBlockRepository
-                    if (blockRepo.isBlockedDuringFocus(packageName)) {
-                        // Instantly dismiss distracting notification from shade
+                    if (FocusStateRepository.isPackageBlockedDuringFocus(packageName)) {
                         cancelNotification(sbn.key)
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Throwable) {
                 // Fail-safe: don't crash the listener
             }
         }

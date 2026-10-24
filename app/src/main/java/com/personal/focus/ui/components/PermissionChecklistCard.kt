@@ -117,10 +117,13 @@ fun PermissionChecklistCard(
             description = "Monitors app screentime and enforces daily limits",
             isGranted = hasUsageAccess,
             onGrant = {
-                val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                try {
+                    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                } catch (_: Throwable) {
                 }
-                context.startActivity(intent)
             }
         ),
         PermissionItem(
@@ -129,10 +132,13 @@ fun PermissionChecklistCard(
             description = "Enforces YouTube Study Mode & Anti-Tampering shielding",
             isGranted = hasAccessibility,
             onGrant = {
-                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                try {
+                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                } catch (_: Throwable) {
                 }
-                context.startActivity(intent)
             }
         ),
         PermissionItem(
@@ -141,10 +147,13 @@ fun PermissionChecklistCard(
             description = "Silences distracting notifications during active focus",
             isGranted = hasNotificationListener,
             onGrant = {
-                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                try {
+                    val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                } catch (_: Throwable) {
                 }
-                context.startActivity(intent)
             }
         ),
         PermissionItem(
@@ -153,13 +162,23 @@ fun PermissionChecklistCard(
             description = "Instantly intercepts blocked apps with zero animation",
             isGranted = hasOverlayPermission,
             onGrant = {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:${context.packageName}")
-                ).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                try {
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:${context.packageName}")
+                    ).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                } catch (_: Throwable) {
+                    try {
+                        val fallback = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context.startActivity(fallback)
+                    } catch (_: Throwable) {
+                    }
                 }
-                context.startActivity(intent)
             }
         ),
         PermissionItem(
@@ -168,15 +187,18 @@ fun PermissionChecklistCard(
             description = "Protects Focus from uninstallation during Strict Mode",
             isGranted = hasDeviceAdmin,
             onGrant = {
-                val component = ComponentName(context, FocusDeviceAdminReceiver::class.java)
-                val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-                    putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
-                    putExtra(
-                        DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                        "Protects Focus from uninstallation and tampering during Strict Focus sessions."
-                    )
+                try {
+                    val component = ComponentName(context, FocusDeviceAdminReceiver::class.java)
+                    val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                        putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
+                        putExtra(
+                            DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                            "Protects Focus from uninstallation and tampering during Strict Focus sessions."
+                        )
+                    }
+                    adminLauncher.launch(intent)
+                } catch (_: Throwable) {
                 }
-                adminLauncher.launch(intent)
             }
         )
     )
@@ -188,12 +210,12 @@ fun PermissionChecklistCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
             // Header
             Row(
@@ -207,7 +229,7 @@ fun PermissionChecklistCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(10.dp)
+                                .size(9.dp)
                                 .clip(CircleShape)
                                 .background(if (allGranted) PrimaryGreen else SecondaryOrange)
                         )
@@ -215,55 +237,55 @@ fun PermissionChecklistCard(
                         Text(
                             text = if (allGranted) "ALL PERMISSIONS ACTIVE" else "PERMISSION SETUP CHECKLIST",
                             color = if (allGranted) PrimaryGreen else SecondaryOrange,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
+                            letterSpacing = 0.8.sp
                         )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (allGranted) {
                             "Full system protection & blocking enabled ($grantedCount/$totalCount)"
                         } else {
-                            "$grantedCount of $totalCount permissions granted"
+                            "$grantedCount of $totalCount permissions granted • Tap Setup to grant"
                         },
                         color = Neutral90,
-                        fontSize = 13.sp
+                        fontSize = 12.sp
                     )
                 }
 
                 Text(
                     text = if (isExpanded) "Hide ▲" else "Setup ▼",
                     color = PrimaryGreen,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Progress Bar
             LinearProgressIndicator(
                 progress = { grantedCount.toFloat() / totalCount.toFloat() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(6.dp)
+                    .height(5.dp)
                     .clip(RoundedCornerShape(3.dp)),
                 color = PrimaryGreen,
                 trackColor = Neutral10
             )
 
-            // Collapsible items list (default open if not all granted)
+            // Collapsible items list (collapsed by default so Focus tab fits on one screen)
             AnimatedVisibility(
-                visible = isExpanded || !allGranted,
+                visible = isExpanded,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(top = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     permissions.forEach { item ->
                         PermissionItemRow(item = item)

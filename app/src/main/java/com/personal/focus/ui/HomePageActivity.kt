@@ -56,11 +56,12 @@ open class HomePageActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.personal.focus.FocusApplication.ensureInitialized(this)
 
         // Ensure background watchdog service is active
         try {
             MyMonitorService.startService(this)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             // Failsafe on restricted permission state
         }
 

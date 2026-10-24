@@ -11,15 +11,16 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.personal.focus.R
 import com.personal.focus.FocusApplication
-import com.personal.focus.data.model.SessionStatus
+import com.personal.focus.R
+import com.personal.focus.data.repository.FocusStateRepository
 import com.personal.focus.ui.HomePageActivity
 import com.personal.focus.ui.overlay.AppBlockOverlayManager
 import com.personal.focus.ui.overlay.OverlayActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -27,11 +28,12 @@ import kotlinx.coroutines.withContext
 
 /**
  * Persistent Foreground Watchdog Service running in RAM to monitor
- * app usage limits and enforce focus session blocks via UsageStatsManager.
+ * app usage limits and enforce focus session blocks via UsageStatsManager
+ * and FocusStateRepository.
  */
 class MyMonitorService : Service() {
 
-    private val serviceScope = CoroutineScope(Dispatchers.Default)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var monitorJob: Job? = null
     private var lastInterceptedPackage: String? = null
     private var lastInterceptTime: Long = 0L
@@ -40,11 +42,13 @@ class MyMonitorService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        FocusApplication.ensureInitialized(applicationContext)
         startForegroundNotification()
         startWatchdogLoop()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        FocusApplication.ensureInitialized(applicationContext)
         startForegroundNotification()
         if (monitorJob == null || monitorJob?.isActive == false) {
             startWatchdogLoop()
@@ -53,25 +57,25 @@ class MyMonitorService : Service() {
     }
 
     private fun startForegroundNotification() {
-        val launchIntent = Intent(this, HomePageActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            launchIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val notification: Notification = NotificationCompat.Builder(this, FocusApplication.CHANNEL_MONITORING)
-            .setContentTitle(getString(R.string.monitoring_notification_title))
-            .setContentText(getString(R.string.monitoring_notification_text))
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setOngoing(true)
-            .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .build()
-
         try {
+            val launchIntent = Intent(this, HomePageActivity::class.java)
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                launchIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val notification: Notification = NotificationCompat.Builder(this, FocusApplication.CHANNEL_MONITORING)
+                .setContentTitle(getString(R.string.monitoring_notification_title))
+                .setContentText(getString(R.string.monitoring_notification_text))
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setOngoing(true)
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .build()
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
                     NOTIFICATION_ID,
@@ -81,8 +85,17 @@ class MyMonitorService : Service() {
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
-        } catch (e: Exception) {
-            startForeground(NOTIFICATION_ID, notification)
+        } catch (_: Throwable) {
+            try {
+                val fallbackNotification = NotificationCompat.Builder(this, FocusApplication.CHANNEL_MONITORING)
+                    .setContentTitle(getString(R.string.monitoring_notification_title))
+                    .setContentText(getString(R.string.monitoring_notification_text))
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .build()
+                startForeground(NOTIFICATION_ID, fallbackNotification)
+            } catch (_: Throwable) {
+                // Avoid crashing if OS denies background startForeground
+            }
         }
     }
 
@@ -90,61 +103,45 @@ class MyMonitorService : Service() {
         monitorJob?.cancel()
         monitorJob = serviceScope.launch {
             val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
-            val app = FocusApplication.instance
-            val focusRepo = app.focusTimerRepository
-            val blockRepo = app.appBlockRepository
-            val usageRepo = app.usageStatsRepository
-            val ytRepo = app.youTubeStudyRepository
 
             while (isActive) {
                 try {
+                    FocusApplication.ensureInitialized(applicationContext)
+                    val blockRepo = FocusStateRepository.appBlockRepository
+                    val usageRepo = FocusStateRepository.usageStatsRepository
+
                     val currentForeground = getForegroundPackage(usageStatsManager)
                     if (currentForeground != null) {
                         if (currentForeground == packageName || isLauncherPackage(currentForeground)) {
-                            // User is on home screen or in Focus - dismiss blocking overlay
-                            AppBlockOverlayManager.dismissOverlay()
-                        } else if (isValidTargetPackage(currentForeground)) {
-                            val activeSession = focusRepo.activeSession.value
-                            val isFocusActive = activeSession != null &&
-                                    activeSession.sessionStatus == SessionStatus.ACTIVE &&
-                                    !activeSession.isInBreak
-
-                            // 1. Focus Session Enforcement
-                            if (isFocusActive) {
-                                val isYouTube = (currentForeground == "com.google.android.youtube")
-                                val isStudyModeActive = isYouTube && (ytRepo.isStudyModeEnabled.value || isFocusActive) && MyMonitorInAppBlockService.isAlive
-
-                                if (!isStudyModeActive && blockRepo.isBlockedDuringFocus(currentForeground)) {
-                                    triggerOverlay(
-                                        targetPackage = currentForeground,
-                                        blockReason = OverlayActivity.REASON_FOCUS_ACTIVE
-                                    )
-                                }
-                            } else {
-                                // Permanent App Blocklist enforcement outside focus session
-                                if (blockRepo.isAppBlockedSync(currentForeground)) {
-                                    triggerOverlay(
-                                        targetPackage = currentForeground,
-                                        blockReason = OverlayActivity.REASON_APP_BLOCKED
-                                    )
-                                }
+                            if ( isLauncherPackage(currentForeground) ) {
+                                AppBlockOverlayManager.dismissOverlay()
                             }
+                        } else if (isValidTargetPackage(currentForeground)) {
+                            val isFocusActive = FocusStateRepository.isSessionActiveNow()
 
-                            // 2. Daily App Usage Quota Enforcement
-                            val limitMinutes = blockRepo.getDailyLimitMinutesSync(currentForeground)
-                            if (limitMinutes > 0) {
-                                val usageMs = usageRepo.getPackageTodayUsageMillis(currentForeground)
-                                val limitMs = limitMinutes * 60 * 1000L
-                                if (usageMs >= limitMs) {
-                                    triggerOverlay(
-                                        targetPackage = currentForeground,
-                                        blockReason = OverlayActivity.REASON_LIMIT_EXCEEDED
-                                    )
+                            // 1. Active Focus Session Enforcement via FocusStateRepository
+                            if (isFocusActive && FocusStateRepository.isPackageBlockedDuringFocus(currentForeground)) {
+                                triggerOverlay(
+                                    targetPackage = currentForeground,
+                                    blockReason = OverlayActivity.REASON_FOCUS_ACTIVE
+                                )
+                            } else {
+                                // 2. Daily App Usage Quota Enforcement
+                                val limitMinutes = blockRepo?.getDailyLimitMinutesSync(currentForeground) ?: 0
+                                if (limitMinutes > 0 && usageRepo != null) {
+                                    val usageMs = usageRepo.getPackageTodayUsageMillis(currentForeground)
+                                    val limitMs = limitMinutes * 60 * 1000L
+                                    if (usageMs >= limitMs) {
+                                        triggerOverlay(
+                                            targetPackage = currentForeground,
+                                            blockReason = OverlayActivity.REASON_LIMIT_EXCEEDED
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                } catch (e: Exception) {
+                } catch (_: Throwable) {
                     // Suppress and continue watchdog resilience
                 }
                 delay(WATCHDOG_INTERVAL_MS)
@@ -172,14 +169,13 @@ class MyMonitorService : Service() {
                 return@withContext lastResumedPackage
             }
 
-            // Fallback to queryUsageStats if no recent resumed event in window
             val statsList = usageStatsManager.queryUsageStats(
                 UsageStatsManager.INTERVAL_DAILY,
                 endTime - 60_000L,
                 endTime
             )
-            statsList.maxByOrNull { it.lastTimeUsed }?.packageName
-        } catch (e: Exception) {
+            statsList?.maxByOrNull { it.lastTimeUsed }?.packageName
+        } catch (_: Throwable) {
             null
         }
     }
@@ -199,35 +195,18 @@ class MyMonitorService : Service() {
                 lower.contains("home")
     }
 
-    private fun isCommonDistraction(packageName: String): Boolean {
-        val lower = packageName.lowercase()
-        return lower.contains("youtube") ||
-                lower.contains("chrome") ||
-                lower.contains("browser") ||
-                lower.contains("instagram") ||
-                lower.contains("tiktok") ||
-                lower.contains("facebook") ||
-                lower.contains("whatsapp") ||
-                lower.contains("twitter") ||
-                lower.contains("snapchat") ||
-                lower.contains("reddit") ||
-                lower.contains("netflix")
-    }
-
     private fun triggerOverlay(targetPackage: String, blockReason: String) {
         val now = System.currentTimeMillis()
-        // Prevent rapid duplicate launches within 1.5 seconds for the same package
-        if (targetPackage == lastInterceptedPackage && (now - lastInterceptTime) < 1500L) {
+        if (targetPackage == lastInterceptedPackage && (now - lastInterceptTime) < 1200L) {
             return
         }
         lastInterceptedPackage = targetPackage
         lastInterceptTime = now
 
-        // 1. Instant full-screen Compose/View blocking overlay directly via WindowManager
-        // This is immune to Android 14+ Background Activity Launch (BAL) restrictions
+        // 1. Direct WindowManager system overlay fallback (TYPE_APPLICATION_OVERLAY)
         AppBlockOverlayManager.showOverlay(this, targetPackage, blockReason)
 
-        // 2. Also attempt starting OverlayActivity as secondary interception
+        // 2. Launch OverlayActivity with required flags
         try {
             val overlayIntent = Intent(this, OverlayActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or
@@ -238,7 +217,7 @@ class MyMonitorService : Service() {
                 putExtra(OverlayActivity.EXTRA_BLOCK_REASON, blockReason)
             }
             startActivity(overlayIntent)
-        } catch (e: Exception) {
+        } catch (_: Throwable) {
             // Background Activity Launch restriction on Android 14+ handled by WindowManager overlay
         }
     }
@@ -250,14 +229,17 @@ class MyMonitorService : Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 1001
-        private const val WATCHDOG_INTERVAL_MS = 1000L
+        private const val WATCHDOG_INTERVAL_MS = 500L
 
         fun startService(context: Context) {
-            val intent = Intent(context, MyMonitorService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                val intent = Intent(context, MyMonitorService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (_: Throwable) {
             }
         }
     }

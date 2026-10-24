@@ -272,8 +272,10 @@ object AppBlockOverlayManager {
     }
 
     private fun updateTimerDisplay() {
-        val app = try { FocusApplication.instance } catch (e: Exception) { null }
-        val remainingMillis = app?.focusTimerRepository?.remainingTimeMillis?.value ?: 0L
+        val remainingMillis = com.personal.focus.data.repository.FocusStateRepository.remainingTimeMillis.value
+            .takeIf { it > 0L }
+            ?: FocusApplication.instanceOrNull?.focusTimerRepository?.remainingTimeMillis?.value
+            ?: 0L
         if (remainingMillis > 0L) {
             val minutes = (remainingMillis / 1000L) / 60
             val seconds = (remainingMillis / 1000L) % 60

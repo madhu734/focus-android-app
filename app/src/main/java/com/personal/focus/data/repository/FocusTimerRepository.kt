@@ -10,10 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -41,6 +39,7 @@ class FocusTimerRepository(
 
     var onSessionEnded: (() -> Unit)? = null
     private var breakElapsedRealtimeStart: Long? = null
+    private var pauseElapsedRealtimeStart: Long? = null
 
     private var tickerJob: Job? = null
 
@@ -74,22 +73,19 @@ class FocusTimerRepository(
             while (isActive) {
                 val current = activeSession.value ?: break
                 if (current.sessionStatus == SessionStatus.ACTIVE) {
-                    val elapsedMs = timeProvider() - current.elapsedRealtimeStart
-                    
                     if (current.isInBreak && current.breakExpiryTime != null) {
-                        val breakDuration = if (current.currentRound % current.roundsPerCycle == 0) {
-                            current.longBreakDurationInMillis
-                        } else {
-                            current.breakDurationInMillis
-                        }
-                        val breakStartElapsed = breakElapsedRealtimeStart ?: (timeProvider() - (breakDuration - (current.breakExpiryTime - System.currentTimeMillis()).coerceAtLeast(0L)))
-                        val breakElapsed = timeProvider() - breakStartElapsed
+                        val breakDuration = current.breakDurationInMillis
+                        val breakStartElapsed = breakElapsedRealtimeStart ?: (
+                            timeProvider() - (breakDuration - (current.breakExpiryTime - wallClockProvider()).coerceAtLeast(0L))
+                        ).also { breakElapsedRealtimeStart = it }
+                        val breakElapsed = (timeProvider() - breakStartElapsed).coerceAtLeast(0L)
                         val breakRemaining = (breakDuration - breakElapsed).coerceAtLeast(0L)
                         _remainingTimeMillis.value = breakRemaining
                         if (breakRemaining <= 0L) {
                             endBreak()
                         }
                     } else if (current.durationInMillis != null) {
+                        val elapsedMs = (timeProvider() - current.elapsedRealtimeStart).coerceAtLeast(0L)
                         val remaining = (current.durationInMillis - elapsedMs).coerceAtLeast(0L)
                         _remainingTimeMillis.value = remaining
                         if (remaining <= 0L) {
@@ -98,6 +94,7 @@ class FocusTimerRepository(
                         }
                     } else {
                         // Stopwatch mode: tracks elapsed milliseconds
+                        val elapsedMs = (timeProvider() - current.elapsedRealtimeStart).coerceAtLeast(0L)
                         _remainingTimeMillis.value = elapsedMs
                     }
                 }
@@ -126,9 +123,12 @@ class FocusTimerRepository(
     ): Long {
         // Cancel any lingering sessions first
         focusTimerDao.cancelAllActiveSessions()
+        breakElapsedRealtimeStart = null
+        pauseElapsedRealtimeStart = null
 
         val now = wallClockProvider()
         val elapsedRealtime = timeProvider()
+        val effectiveBreaksAllowed = if (isLockedIn) 0 else breaksAllowedCount.coerceIn(0, 4)
 
         val session = FocusTimerSession(
             startTime = now,
@@ -139,7 +139,7 @@ class FocusTimerRepository(
             isUninstallBlocked = isUninstallBlocked,
             isLauncherBlocked = isLauncherBlocked,
             blockNotifications = blockNotifications,
-            breaksAllowedCount = if (isLockedIn) 0 else breaksAllowedCount,
+            breaksAllowedCount = effectiveBreaksAllowed,
             breaksTakenCount = 0,
             breakDurationInMillis = breakDurationInMillis,
             longBreakDurationInMillis = longBreakDurationInMillis,
@@ -153,6 +153,7 @@ class FocusTimerRepository(
         )
 
         _activeSession.value = session
+        _remainingTimeMillis.value = durationInMillis ?: 0L
         _isStrictActive.value = isLockedIn
         val id = focusTimerDao.insertSession(session)
         val withId = session.copy(sessionId = id)
@@ -166,6 +167,8 @@ class FocusTimerRepository(
             // Strict mode does not permit pausing
             return false
         }
+        if (current.sessionStatus == SessionStatus.PAUSED) return true
+        pauseElapsedRealtimeStart = timeProvider()
         val updated = current.copy(sessionStatus = SessionStatus.PAUSED)
         _activeSession.value = updated
         focusTimerDao.updateSession(updated)
@@ -175,7 +178,13 @@ class FocusTimerRepository(
     suspend fun resumeSession(): Boolean {
         val current = activeSession.value ?: return false
         if (current.sessionStatus != SessionStatus.PAUSED) return false
-        val updated = current.copy(sessionStatus = SessionStatus.ACTIVE)
+        val pauseSpent = pauseElapsedRealtimeStart?.let { (timeProvider() - it).coerceAtLeast(0L) } ?: 0L
+        pauseElapsedRealtimeStart = null
+        val updated = current.copy(
+            sessionStatus = SessionStatus.ACTIVE,
+            elapsedRealtimeStart = current.elapsedRealtimeStart + pauseSpent,
+            startTime = current.startTime + pauseSpent
+        )
         _activeSession.value = updated
         focusTimerDao.updateSession(updated)
         return true
@@ -187,21 +196,35 @@ class FocusTimerRepository(
             // Strict mode: breaks forbidden
             return false
         }
+        if (current.isInBreak) {
+            return false
+        }
         if (current.breaksTakenCount >= current.breaksAllowedCount) {
             return false
         }
 
-        val isLongBreak = (current.currentRound % current.roundsPerCycle == 0)
-        val breakDuration = if (isLongBreak) current.longBreakDurationInMillis else current.breakDurationInMillis
+        val nowRealtime = timeProvider()
+        val pauseSpent = if (current.sessionStatus == SessionStatus.PAUSED) {
+            pauseElapsedRealtimeStart?.let { (nowRealtime - it).coerceAtLeast(0L) } ?: 0L
+        } else {
+            0L
+        }
+        pauseElapsedRealtimeStart = null
+
+        val breakDuration = current.breakDurationInMillis
         val expiry = wallClockProvider() + breakDuration
-        breakElapsedRealtimeStart = timeProvider()
+        breakElapsedRealtimeStart = nowRealtime
 
         val updated = current.copy(
+            sessionStatus = SessionStatus.ACTIVE,
             isInBreak = true,
             breaksTakenCount = current.breaksTakenCount + 1,
-            breakExpiryTime = expiry
+            breakExpiryTime = expiry,
+            elapsedRealtimeStart = current.elapsedRealtimeStart + pauseSpent,
+            startTime = current.startTime + pauseSpent
         )
         _activeSession.value = updated
+        _remainingTimeMillis.value = breakDuration
         focusTimerDao.updateSession(updated)
         return true
     }
@@ -210,13 +233,27 @@ class FocusTimerRepository(
         val current = activeSession.value ?: return
         if (!current.isInBreak) return
 
+        val nowRealtime = timeProvider()
+        val breakSpent = breakElapsedRealtimeStart?.let { (nowRealtime - it).coerceAtLeast(0L) } ?: 0L
         breakElapsedRealtimeStart = null
+
+        val newElapsedStart = current.elapsedRealtimeStart + breakSpent
+        val newWallStart = current.startTime + breakSpent
+
         val updated = current.copy(
             isInBreak = false,
             breakExpiryTime = null,
-            currentRound = current.currentRound + 1
+            currentRound = current.currentRound + 1,
+            elapsedRealtimeStart = newElapsedStart,
+            startTime = newWallStart
         )
         _activeSession.value = updated
+        val elapsedFocusMs = (nowRealtime - newElapsedStart).coerceAtLeast(0L)
+        _remainingTimeMillis.value = if (updated.durationInMillis != null) {
+            (updated.durationInMillis - elapsedFocusMs).coerceAtLeast(0L)
+        } else {
+            elapsedFocusMs
+        }
         focusTimerDao.updateSession(updated)
     }
 
@@ -229,7 +266,8 @@ class FocusTimerRepository(
         }
 
         breakElapsedRealtimeStart = null
-        val elapsedMs = timeProvider() - current.elapsedRealtimeStart
+        pauseElapsedRealtimeStart = null
+        val elapsedMs = (timeProvider() - current.elapsedRealtimeStart).coerceAtLeast(0L)
         val updated = current.copy(
             sessionStatus = SessionStatus.CANCELLED,
             totalFocusTimeSpentMillis = elapsedMs
@@ -245,7 +283,8 @@ class FocusTimerRepository(
     suspend fun completeSession() {
         val current = activeSession.value ?: return
         breakElapsedRealtimeStart = null
-        val elapsedMs = timeProvider() - current.elapsedRealtimeStart
+        pauseElapsedRealtimeStart = null
+        val elapsedMs = (timeProvider() - current.elapsedRealtimeStart).coerceAtLeast(0L)
         val updated = current.copy(
             sessionStatus = SessionStatus.COMPLETED,
             totalFocusTimeSpentMillis = current.durationInMillis ?: elapsedMs

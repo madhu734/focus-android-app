@@ -3,10 +3,12 @@ package com.personal.focus
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
 import android.os.Build
 import com.personal.focus.data.FocusDatabase
 import com.personal.focus.data.model.SessionStatus
 import com.personal.focus.data.repository.AppBlockRepository
+import com.personal.focus.data.repository.FocusStateRepository
 import com.personal.focus.data.repository.FocusTimerRepository
 import com.personal.focus.data.repository.UsageStatsRepository
 import com.personal.focus.data.repository.YouTubeStudyRepository
@@ -35,7 +37,7 @@ class FocusApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
+        _instance = this
 
         database = FocusDatabase.getInstance(this)
         focusTimerRepository = FocusTimerRepository(database.focusTimerDao())
@@ -50,7 +52,18 @@ class FocusApplication : Application() {
         }
         appBlockRepository = AppBlockRepository(database.appBlockDao())
         youTubeStudyRepository = YouTubeStudyRepository(database.studyChannelDao())
-        usageStatsRepository = UsageStatsRepository(database.dailyUsageDao())
+        usageStatsRepository = UsageStatsRepository(
+            dailyUsageDao = database.dailyUsageDao(),
+            focusTimerDao = database.focusTimerDao()
+        )
+
+        FocusStateRepository.initialize(
+            context = this,
+            existingTimerRepo = focusTimerRepository,
+            existingBlockRepo = appBlockRepository,
+            existingYouTubeRepo = youTubeStudyRepository,
+            existingUsageRepo = usageStatsRepository
+        )
 
         createNotificationChannels()
         seedInitialData()
@@ -84,22 +97,10 @@ class FocusApplication : Application() {
 
     private fun seedInitialData() {
         CoroutineScope(Dispatchers.IO).launch {
-            youTubeStudyRepository.seedDefaultsIfEmpty()
-            
-            // Seed common distracting apps for initial picker
-            val defaultDistractions = listOf(
-                "com.google.android.youtube" to "YouTube",
-                "com.android.chrome" to "Google Chrome",
-                "com.whatsapp" to "WhatsApp",
-                "com.instagram.android" to "Instagram",
-                "com.facebook.katana" to "Facebook",
-                "com.zhiliaoapp.musically" to "TikTok",
-                "com.twitter.android" to "X (Twitter)",
-                "com.snapchat.android" to "Snapchat",
-                "com.reddit.frontpage" to "Reddit",
-                "com.netflix.mediaclient" to "Netflix"
-            )
-            appBlockRepository.seedDefaultsIfNeeded(defaultDistractions)
+            try {
+                FocusStateRepository.syncInstalledAppsAndDefaults(this@FocusApplication)
+            } catch (_: Throwable) {
+            }
         }
     }
 
@@ -107,7 +108,28 @@ class FocusApplication : Application() {
         const val CHANNEL_MONITORING = "channel_focus_monitoring"
         const val CHANNEL_SESSION = "channel_focus_session"
 
-        lateinit var instance: FocusApplication
-            private set
+        @Volatile
+        private var _instance: FocusApplication? = null
+
+        val instanceOrNull: FocusApplication?
+            get() = _instance
+
+        val instance: FocusApplication
+            get() = _instance ?: throw IllegalStateException("FocusApplication not initialized yet")
+
+        fun ensureInitialized(context: Context) {
+            val app = (context.applicationContext as? FocusApplication) ?: _instance
+            if (app != null) {
+                FocusStateRepository.initialize(
+                    context = app,
+                    existingTimerRepo = if (app::focusTimerRepository.isInitialized) app.focusTimerRepository else null,
+                    existingBlockRepo = if (app::appBlockRepository.isInitialized) app.appBlockRepository else null,
+                    existingYouTubeRepo = if (app::youTubeStudyRepository.isInitialized) app.youTubeStudyRepository else null,
+                    existingUsageRepo = if (app::usageStatsRepository.isInitialized) app.usageStatsRepository else null
+                )
+            } else {
+                FocusStateRepository.initialize(context)
+            }
+        }
     }
 }

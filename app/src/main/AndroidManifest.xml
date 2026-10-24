@@ -73,7 +73,8 @@
         <!-- 3. Overlays (SingleInstance, Translucent, No Animation) -->
         <activity
             android:name=".ui.overlay.OverlayActivity"
-            android:exported="false"
+            android:exported="true"
+            android:taskAffinity=""
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
             android:showOnLockScreen="true"
@@ -81,7 +82,8 @@
 
         <activity
             android:name=".ui.overlay.BlockShortsOverlayActivity"
-            android:exported="false"
+            android:exported="true"
+            android:taskAffinity=""
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
             android:showOnLockScreen="true"
@@ -89,7 +91,8 @@
 
         <activity
             android:name=".ui.overlay.BlockProtectionActivity"
-            android:exported="false"
+            android:exported="true"
+            android:taskAffinity=""
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
             android:showOnLockScreen="true"
@@ -97,7 +100,8 @@
 
         <activity
             android:name=".ui.overlay.FTOverlayActivity"
-            android:exported="false"
+            android:exported="true"
+            android:taskAffinity=""
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
             android:showOnLockScreen="true"

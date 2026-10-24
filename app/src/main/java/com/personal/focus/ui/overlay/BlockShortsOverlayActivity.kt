@@ -1,5 +1,7 @@
 package com.personal.focus.ui.overlay
 
+import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -22,6 +24,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,13 +34,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.personal.focus.FocusApplication
 import com.personal.focus.ui.theme.DarkSurface
 import com.personal.focus.ui.theme.DimTransparent80
+import com.personal.focus.ui.theme.FocusTheme
 import com.personal.focus.ui.theme.NavBarColor
 import com.personal.focus.ui.theme.Neutral100
 import com.personal.focus.ui.theme.Neutral90
 import com.personal.focus.ui.theme.PrimaryGreen
-import com.personal.focus.ui.theme.FocusTheme
 
 /**
  * High-friction overlay activity triggered when YouTube Shorts or infinite Home feeds
@@ -44,38 +49,66 @@ import com.personal.focus.ui.theme.FocusTheme
  */
 class BlockShortsOverlayActivity : ComponentActivity() {
 
+    private val diversionTypeState = mutableStateOf(DIVERSION_SHORTS)
+
+    override fun attachBaseContext(newBase: Context?) {
+        if (newBase != null) {
+            try {
+                val config = Configuration(newBase.resources.configuration)
+                config.fontScale = 1.0f
+                super.attachBaseContext(newBase.createConfigurationContext(config))
+                return
+            } catch (_: Throwable) {
+            }
+        }
+        super.attachBaseContext(newBase)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FocusApplication.ensureInitialized(this)
+        AppBlockOverlayManager.dismissOverlay()
         configureWindow()
-
-        val diversionType = intent.getStringExtra(EXTRA_DIVERSION_TYPE) ?: DIVERSION_SHORTS
+        diversionTypeState.value = intent?.getStringExtra(EXTRA_DIVERSION_TYPE) ?: DIVERSION_SHORTS
 
         setContent {
             FocusTheme {
+                val diversionType by diversionTypeState
                 BlockShortsScreen(
                     diversionType = diversionType,
-                    onDismiss = { finish() }
+                    onDismiss = {
+                        AppBlockOverlayManager.dismissOverlay()
+                        finish()
+                    }
                 )
             }
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        AppBlockOverlayManager.dismissOverlay()
+        diversionTypeState.value = intent.getStringExtra(EXTRA_DIVERSION_TYPE) ?: DIVERSION_SHORTS
+    }
+
     private fun configureWindow() {
-        val configuration = Configuration(resources.configuration)
-        configuration.fontScale = 1.0f
-        applyOverrideConfiguration(configuration)
-
-        window.navigationBarColor = NavBarColor.toArgb()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-        } else {
+        try {
             @Suppress("DEPRECATION")
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            )
+            overridePendingTransition(0, 0)
+            window.navigationBarColor = NavBarColor.toArgb()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+            } else {
+                @Suppress("DEPRECATION")
+                window.addFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                )
+            }
+        } catch (_: Throwable) {
         }
     }
 

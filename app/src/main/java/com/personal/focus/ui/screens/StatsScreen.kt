@@ -25,19 +25,25 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.personal.focus.FocusApplication
 import com.personal.focus.data.model.DailyAppUsageRecord
+import com.personal.focus.data.repository.FocusStateRepository
 import com.personal.focus.ui.theme.ClashDisplayFamily
 import com.personal.focus.ui.theme.DarkSurface
 import com.personal.focus.ui.theme.Gold
@@ -47,12 +53,12 @@ import com.personal.focus.ui.theme.Neutral100
 import com.personal.focus.ui.theme.Neutral90
 import com.personal.focus.ui.theme.PrimaryGreen
 import com.personal.focus.ui.theme.RobotoNumbersFamily
-import com.personal.focus.ui.theme.SecondaryOrange
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
 data class WeeklyDayStat(
     val dayLabel: String,
+    val dateKey: String,
     val screentimeMinutes: Int,
     val isToday: Boolean
 )
@@ -61,12 +67,40 @@ data class WeeklyDayStat(
 fun StatsScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val app = FocusApplication.instance
-    val usageRepo = app.usageStatsRepository
+    remember(context) { FocusApplication.ensureInitialized(context) }
+    val usageRepo = FocusStateRepository.usageStatsRepository ?: FocusApplication.instance.usageStatsRepository
 
-    val todayUsage by usageRepo.todayUsage.collectAsState()
+    val rawTodayUsage by usageRepo.todayUsage.collectAsState()
     val totalScreenTimeMillis by usageRepo.todayTotalScreenTimeMillis.collectAsState()
     val totalTimeSavedMillis by usageRepo.totalTimeSavedMillis.collectAsState()
+    val completedFocusDateKeys by usageRepo.completedFocusDateKeys.collectAsState()
+    val currentStreakDays by usageRepo.currentStreakDays.collectAsState()
+    val weeklyUsageSummary by usageRepo.weeklyUsageSummary.collectAsState()
+
+    var isSyncing by remember { mutableStateOf(false) }
+
+    // Deduplicate and filter out our own package before displaying in LazyColumn
+    val deduplicatedTodayUsage = remember(rawTodayUsage, context.packageName) {
+        rawTodayUsage
+            .filter { it.packageName != context.packageName && it.packageName != "com.personal.focus" && it.usageDurationMillis > 0L }
+            .groupBy { it.packageName }
+            .map { (_, entries) ->
+                val first = entries.first()
+                first.copy(
+                    usageDurationMillis = entries.maxOf { it.usageDurationMillis },
+                    lastTimeUsed = entries.maxOf { it.lastTimeUsed }
+                )
+            }
+            .distinctBy { it.packageName }
+            .sortedByDescending { it.usageDurationMillis }
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            usageRepo.syncUsageFromSystem(context)
+        } catch (_: Throwable) {
+        }
+    }
 
     val savedHours = (totalTimeSavedMillis / 1000L) / 3600
     val savedMins = ((totalTimeSavedMillis / 1000L) % 3600) / 60
@@ -76,11 +110,12 @@ fun StatsScreen() {
     val screenMins = ((totalScreenTimeMillis / 1000L) % 3600) / 60
     val screenText = "${screenHours}h ${screenMins}m Total Screentime"
 
-    // Current day of week for weekly chart calculation
+    // Current day of week for real 7-day chart & streak
     val todayCal = Calendar.getInstance()
-    val currentDayOfWeek = todayCal.get(Calendar.DAY_OF_WEEK) // 1 = Sun, 2 = Mon ...
+    val currentDayOfWeek = todayCal.get(Calendar.DAY_OF_WEEK)
 
     val daysOfWeek = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val shortLabels = listOf("M", "T", "W", "T", "F", "S", "S")
     val todayIndex = when (currentDayOfWeek) {
         Calendar.MONDAY -> 0
         Calendar.TUESDAY -> 1
@@ -92,18 +127,23 @@ fun StatsScreen() {
         else -> 0
     }
 
+    val weekDateKeys = remember { usageRepo.getCurrentWeekDateKeys() }
     val todayMinutes = ((totalScreenTimeMillis / 1000L) / 60).toInt()
 
-    // Weekly distribution with today populated from actual usage
-    val weeklyData = listOf(
-        WeeklyDayStat("M", if (todayIndex == 0) todayMinutes else 45, todayIndex == 0),
-        WeeklyDayStat("T", if (todayIndex == 1) todayMinutes else 62, todayIndex == 1),
-        WeeklyDayStat("W", if (todayIndex == 2) todayMinutes else 38, todayIndex == 2),
-        WeeklyDayStat("T", if (todayIndex == 3) todayMinutes else 55, todayIndex == 3),
-        WeeklyDayStat("F", if (todayIndex == 4) todayMinutes else 40, todayIndex == 4),
-        WeeklyDayStat("S", if (todayIndex == 5) todayMinutes else 75, todayIndex == 5),
-        WeeklyDayStat("S", if (todayIndex == 6) todayMinutes else 50, todayIndex == 6)
-    )
+    // 100% real weekly distribution (0m for days without recorded usage)
+    val weeklyData = weekDateKeys.mapIndexed { index, dateKey ->
+        val dayMillis = if (index == todayIndex) {
+            totalScreenTimeMillis
+        } else {
+            weeklyUsageSummary[dateKey] ?: 0L
+        }
+        WeeklyDayStat(
+            dayLabel = shortLabels.getOrElse(index) { "" },
+            dateKey = dateKey,
+            screentimeMinutes = ((dayMillis / 1000L) / 60).toInt().coerceAtLeast(if (index == todayIndex) todayMinutes else 0),
+            isToday = index == todayIndex
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -123,7 +163,7 @@ fun StatsScreen() {
         }
 
         // =========================================================================
-        // STREAK INDICATOR (#FFD642 Gold)
+        // 100% REAL STREAK INDICATOR (Starts at 0 on fresh install)
         // =========================================================================
         item {
             Card(
@@ -157,7 +197,7 @@ fun StatsScreen() {
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = "TOP 5%",
+                                text = "$currentStreakDays ${if (currentStreakDays == 1) "DAY" else "DAYS"}",
                                 color = Gold,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 11.sp
@@ -167,13 +207,14 @@ fun StatsScreen() {
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // 7-Day Dots Row
+                    // 7-Day Dots Row (Only marked completed when user actually finishes a focus session on that date)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         daysOfWeek.forEachIndexed { index, day ->
-                            val isCompleted = index <= todayIndex
+                            val dateKey = weekDateKeys.getOrElse(index) { "" }
+                            val isCompleted = completedFocusDateKeys.contains(dateKey)
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
                                     modifier = Modifier
@@ -210,7 +251,7 @@ fun StatsScreen() {
         }
 
         // =========================================================================
-        // HERO CARD: TIME SAVED (Clash Display Typography)
+        // HERO CARD: REAL FOCUS TIME SAVED & TODAY'S SCREENTIME
         // =========================================================================
         item {
             Card(
@@ -224,7 +265,7 @@ fun StatsScreen() {
                         .padding(24.dp)
                 ) {
                     Text(
-                        text = "ATTENTION PRESERVED TODAY",
+                        text = "ATTENTION PRESERVED",
                         color = Gold,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -249,14 +290,27 @@ fun StatsScreen() {
 
                     Button(
                         onClick = {
-                            scope.launch {
-                                usageRepo.syncUsageFromSystem(context)
+                            if (!isSyncing) {
+                                scope.launch {
+                                    isSyncing = true
+                                    try {
+                                        usageRepo.syncUsageFromSystem(context)
+                                    } finally {
+                                        isSyncing = false
+                                    }
+                                }
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Neutral10),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.testTag("sync_usage_stats_button")
                     ) {
-                        Text(text = "Sync Usage Stats", color = PrimaryGreen, fontSize = 13.sp)
+                        Text(
+                            text = if (isSyncing) "Syncing..." else "Sync Usage Stats",
+                            color = PrimaryGreen,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
@@ -264,7 +318,7 @@ fun StatsScreen() {
         }
 
         // =========================================================================
-        // WEEKLY USAGE BAR CHART
+        // REAL WEEKLY USAGE BAR CHART
         // =========================================================================
         item {
             Card(
@@ -305,7 +359,11 @@ fun StatsScreen() {
                         verticalAlignment = Alignment.Bottom
                     ) {
                         weeklyData.forEach { dayStat ->
-                            val heightFraction = (dayStat.screentimeMinutes.toFloat() / maxMinutes.toFloat()).coerceIn(0.1f, 1f)
+                            val heightFraction = if (dayStat.screentimeMinutes <= 0) {
+                                0.04f
+                            } else {
+                                (dayStat.screentimeMinutes.toFloat() / maxMinutes.toFloat()).coerceIn(0.08f, 1f)
+                            }
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Bottom,
@@ -354,7 +412,7 @@ fun StatsScreen() {
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        if (todayUsage.isEmpty()) {
+        if (deduplicatedTodayUsage.isEmpty()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -383,9 +441,9 @@ fun StatsScreen() {
                 }
             }
         } else {
-            val maxUsage = (todayUsage.maxOfOrNull { it.usageDurationMillis } ?: 1L).coerceAtLeast(1L)
+            val maxUsage = (deduplicatedTodayUsage.maxOfOrNull { it.usageDurationMillis } ?: 1L).coerceAtLeast(1L)
 
-            items(todayUsage, key = { it.packageName }) { record ->
+            items(deduplicatedTodayUsage, key = { it.packageName }) { record ->
                 AppUsageItem(
                     record = record,
                     maxUsageMillis = maxUsage
@@ -402,6 +460,8 @@ fun AppUsageItem(
     maxUsageMillis: Long
 ) {
     val mins = (record.usageDurationMillis / 1000L) / 60
+    val secs = ((record.usageDurationMillis / 1000L) % 60)
+    val durationLabel = if (mins > 0) "${mins}m" else "${secs}s"
     val progress = (record.usageDurationMillis.toFloat() / maxUsageMillis.toFloat()).coerceIn(0f, 1f)
 
     Card(
@@ -422,7 +482,7 @@ fun AppUsageItem(
                     fontSize = 15.sp
                 )
                 Text(
-                    text = "${mins}m",
+                    text = durationLabel,
                     fontFamily = RobotoNumbersFamily,
                     fontWeight = FontWeight.Medium,
                     color = PrimaryGreen,

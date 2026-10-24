@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base Application Theme -->
+    <!-- Zero-Transition Window Animation Style -->
+    <style name="NoAnimationWindow" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/no_animation</item>
+        <item name="android:activityOpenExitAnimation">@anim/no_animation</item>
+        <item name="android:activityCloseEnterAnimation">@anim/no_animation</item>
+        <item name="android:activityCloseExitAnimation">@anim/no_animation</item>
+        <item name="android:windowEnterAnimation">@anim/no_animation</item>
+        <item name="android:windowExitAnimation">@anim/no_animation</item>
+    </style>
+
+    <!-- Base Application Theme (ComponentActivity-compatible Material NoActionBar) -->
     <style name="Theme.Focus" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/neutral0</item>
         <item name="android:statusBarColor">@color/neutral0</item>
         <item name="android:navigationBarColor">@color/nav_bar_color</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
-    
 
     <!-- Translucent Overlay Window Style (60% Dim Scrim, Zero Animation) -->
     <style name="Theme.Transparent" parent="android:Theme.Translucent.NoTitleBar">
@@ -17,6 +26,7 @@
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowEnterAnimation">@anim/no_animation</item>
         <item name="android:windowExitAnimation">@anim/no_animation</item>
+        <item name="android:windowAnimationStyle">@style/NoAnimationWindow</item>
         <item name="android:backgroundDimEnabled">false</item>
         <item name="android:statusBarColor">@color/dim_transparent</item>
         <item name="android:navigationBarColor">@color/nav_bar_color</item>
@@ -29,10 +39,12 @@
     </style>
 
     <!-- Solid OLED Dark Surface Style for Anti-Tampering Protection Screen -->
-    <style name="Theme.Protection" parent="android:Theme.NoTitleBar">
+    <style name="Theme.Protection" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/dark_surface</item>
+        <item name="android:windowNoTitle">true</item>
         <item name="android:windowEnterAnimation">@anim/no_animation</item>
         <item name="android:windowExitAnimation">@anim/no_animation</item>
+        <item name="android:windowAnimationStyle">@style/NoAnimationWindow</item>
         <item name="android:statusBarColor">@color/dark_surface</item>
         <item name="android:navigationBarColor">@color/nav_bar_color</item>
     </style>

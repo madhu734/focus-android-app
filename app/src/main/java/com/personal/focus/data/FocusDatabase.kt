@@ -37,7 +37,7 @@ abstract class FocusDatabase : RoomDatabase() {
         fun getInstance(context: Context): FocusDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
-                    context.applicationContext,
+                    context.applicationContext ?: context,
                     FocusDatabase::class.java,
                     "focus_offline.db"
                 )

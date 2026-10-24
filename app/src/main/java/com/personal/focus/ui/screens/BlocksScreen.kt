@@ -1,10 +1,5 @@
 package com.personal.focus.ui.screens
 
-import android.content.Intent
-import android.content.pm.PackageManager
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,9 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -56,14 +49,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.personal.focus.FocusApplication
 import com.personal.focus.data.model.AppBlockRule
-import com.personal.focus.data.model.StudyChannel
+import com.personal.focus.data.repository.FocusStateRepository
+import com.personal.focus.data.repository.SelectableAppInfo
 import com.personal.focus.ui.theme.DarkSurface
 import com.personal.focus.ui.theme.ErrorToastBackground
+import com.personal.focus.ui.theme.Gold
 import com.personal.focus.ui.theme.Neutral0
 import com.personal.focus.ui.theme.Neutral10
 import com.personal.focus.ui.theme.Neutral100
@@ -73,75 +69,45 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class InstalledAppInfo(
-    val appName: String,
-    val packageName: String
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlocksScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val app = FocusApplication.instance
-    val blockRepo = app.appBlockRepository
-    val ytRepo = app.youTubeStudyRepository
+    remember(context) { FocusApplication.ensureInitialized(context) }
+    val blockRepo = FocusStateRepository.appBlockRepository ?: FocusApplication.instance.appBlockRepository
+    val ytRepo = FocusStateRepository.youTubeStudyRepository ?: FocusApplication.instance.youTubeStudyRepository
 
     val allRules by blockRepo.allRules.collectAsState()
-    val whitelistedChannels by ytRepo.whitelistedChannels.collectAsState()
     val isStudyModeEnabled by ytRepo.isStudyModeEnabled.collectAsState()
     val isShortsBlocked by ytRepo.isShortsBlocked.collectAsState()
     val isHomePageDiversion by ytRepo.isHomePageDiversionEnabled.collectAsState()
 
-    var showAddChannelDialog by remember { mutableStateOf(false) }
     var showAppPickerSheet by remember { mutableStateOf(false) }
     val pickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val installedApps = remember { mutableStateListOf<InstalledAppInfo>() }
+    val installedApps = remember { mutableStateListOf<SelectableAppInfo>() }
     var isLoadingApps by remember { mutableStateOf(false) }
 
+    // Crucial: Only show rules for applications that are actually installed on the device
+    val installedRules = remember(allRules, context) {
+        val pm = context.packageManager
+        allRules.filter { FocusStateRepository.isPackageInstalled(pm, it.packageName) }
+    }
+
     LaunchedEffect(Unit) {
-        if (allRules.isEmpty()) {
-            withContext(Dispatchers.IO) {
-                blockRepo.seedDefaultsIfNeeded(
-                    listOf(
-                        "com.google.android.youtube" to "YouTube",
-                        "com.android.chrome" to "Google Chrome",
-                        "com.whatsapp" to "WhatsApp",
-                        "com.instagram.android" to "Instagram",
-                        "com.facebook.katana" to "Facebook",
-                        "com.zhiliaoapp.musically" to "TikTok",
-                        "com.twitter.android" to "X (Twitter)",
-                        "com.snapchat.android" to "Snapchat",
-                        "com.reddit.frontpage" to "Reddit",
-                        "com.netflix.mediaclient" to "Netflix"
-                    )
-                )
-            }
+        withContext(Dispatchers.IO) {
+            FocusStateRepository.syncInstalledAppsAndDefaults(context)
         }
     }
 
-    // Load installed launcher applications asynchronously
+    // Load installed user applications (excluding system apps) when picker opens
     LaunchedEffect(showAppPickerSheet) {
-        if (showAppPickerSheet && installedApps.isEmpty()) {
+        if (showAppPickerSheet) {
             isLoadingApps = true
             withContext(Dispatchers.IO) {
-                val pm = context.packageManager
-                val intent = Intent(Intent.ACTION_MAIN, null).apply {
-                    addCategory(Intent.CATEGORY_LAUNCHER)
-                }
-                val resolveInfos = pm.queryIntentActivities(intent, 0)
-                val apps = resolveInfos
-                    .filter { it.activityInfo.packageName != context.packageName }
-                    .map {
-                        InstalledAppInfo(
-                            appName = it.loadLabel(pm).toString(),
-                            packageName = it.activityInfo.packageName
-                        )
-                    }
-                    .distinctBy { it.packageName }
-                    .sortedBy { it.appName.lowercase() }
-
+                val selectedSet = allRules.map { it.packageName }.toSet()
+                val apps = FocusStateRepository.querySelectableUserApps(context, selectedSet)
                 withContext(Dispatchers.Main) {
                     installedApps.clear()
                     installedApps.addAll(apps)
@@ -169,7 +135,7 @@ fun BlocksScreen() {
         }
 
         // =========================================================================
-        // YOUTUBE STUDY MODE CARD & WHITELIST MANAGER
+        // YOUTUBE STUDY MODE CARD (Shorts & Home Recommendation Diversion Only)
         // =========================================================================
         item {
             Card(
@@ -189,7 +155,7 @@ fun BlocksScreen() {
 
                     SettingToggleRow(
                         title = "Enable Study Mode",
-                        subtitle = "Inspects YouTube views & blocks non-educational content",
+                        subtitle = "Blocks YouTube Shorts & diverts homepage feed while allowing regular videos",
                         checked = isStudyModeEnabled,
                         onCheckedChange = { ytRepo.setStudyModeEnabled(it) }
                     )
@@ -213,47 +179,6 @@ fun BlocksScreen() {
                         enabled = isStudyModeEnabled,
                         onCheckedChange = { ytRepo.setHomePageDiversionEnabled(it) }
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "WHITELISTED STUDY CHANNELS",
-                            color = Neutral90,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Button(
-                            onClick = { showAddChannelDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Neutral10),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(text = "+ Add Channel", color = PrimaryGreen, fontSize = 12.sp)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (whitelistedChannels.isEmpty()) {
-                        Text(
-                            text = "No study channels added. All non-whitelisted videos will be restricted in Study Mode.",
-                            color = Neutral90,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    } else {
-                        whitelistedChannels.forEach { channel ->
-                            ChannelItemRow(
-                                channel = channel,
-                                onDelete = { scope.launch { ytRepo.removeChannel(channel.id) } }
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                        }
-                    }
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -273,15 +198,18 @@ fun BlocksScreen() {
                     color = Neutral90,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.weight(1f)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
                 Button(
                     onClick = { showAppPickerSheet = true },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.testTag("select_distracting_apps_button")
                 ) {
                     Text(
-                        text = "+ Add App",
+                        text = "Select Distracting Apps",
                         color = Color.Black,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
@@ -291,7 +219,7 @@ fun BlocksScreen() {
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        if (allRules.isEmpty()) {
+        if (installedRules.isEmpty()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -312,7 +240,7 @@ fun BlocksScreen() {
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Tap '+ Add App' to choose installed apps and set daily screentime limits or quick blocks.",
+                            text = "Tap 'Select Distracting Apps' to choose installed user apps and set daily screentime limits or focus blocks.",
                             color = Neutral90,
                             fontSize = 12.sp
                         )
@@ -320,7 +248,7 @@ fun BlocksScreen() {
                 }
             }
         } else {
-            items(allRules, key = { it.packageName }) { rule ->
+            items(installedRules, key = { it.packageName }) { rule ->
                 AppBlockRuleCard(
                     rule = rule,
                     onBlockToggled = { blocked ->
@@ -350,7 +278,7 @@ fun BlocksScreen() {
     }
 
     // =========================================================================
-    // DISTRACTING APP PICKER MODAL BOTTOM SHEET
+    // DISTRACTING APP PICKER MODAL BOTTOM SHEET (WITH CHECKBOXES)
     // =========================================================================
     if (showAppPickerSheet) {
         ModalBottomSheet(
@@ -360,7 +288,7 @@ fun BlocksScreen() {
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         ) {
             var searchQuery by remember { mutableStateOf("") }
-            val existingPackages = remember(allRules) { allRules.map { it.packageName }.toSet() }
+            val existingPackages = remember(installedRules) { installedRules.map { it.packageName }.toSet() }
 
             val filteredApps = remember(searchQuery, installedApps.toList()) {
                 if (searchQuery.isBlank()) {
@@ -385,7 +313,7 @@ fun BlocksScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "SELECT APP TO BLOCK / LIMIT",
+                        text = "SELECT DISTRACTING APPS",
                         color = PrimaryGreen,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
@@ -393,7 +321,8 @@ fun BlocksScreen() {
                     )
                     Text(
                         text = "Done",
-                        color = Neutral90,
+                        color = PrimaryGreen,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         modifier = Modifier.clickable { showAppPickerSheet = false }
                     )
@@ -404,7 +333,7 @@ fun BlocksScreen() {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search installed apps...", color = Neutral90) },
+                    placeholder = { Text("Search installed user apps...", color = Neutral90) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -436,7 +365,7 @@ fun BlocksScreen() {
                             .weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = "No applications matching search", color = Neutral90, fontSize = 14.sp)
+                        Text(text = "No installed user applications found", color = Neutral90, fontSize = 14.sp)
                     }
                 } else {
                     LazyColumn(
@@ -446,29 +375,33 @@ fun BlocksScreen() {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(filteredApps, key = { it.packageName }) { appInfo ->
-                            val isAlreadyAdded = existingPackages.contains(appInfo.packageName)
+                            val isSelected = existingPackages.contains(appInfo.packageName)
+                            val toggleAppSelection: (Boolean) -> Unit = { shouldSelect ->
+                                scope.launch {
+                                    if (shouldSelect) {
+                                        blockRepo.insertOrUpdateRule(
+                                            AppBlockRule(
+                                                packageName = appInfo.packageName,
+                                                appName = appInfo.appName,
+                                                isBlocked = true,
+                                                dailyLimitMinutes = 30,
+                                                category = if (appInfo.isGame) "Game" else "Distracting"
+                                            )
+                                        )
+                                    } else {
+                                        blockRepo.deleteRuleByPackage(appInfo.packageName)
+                                    }
+                                }
+                            }
 
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(Neutral10)
-                                    .clickable {
-                                        if (!isAlreadyAdded) {
-                                            scope.launch {
-                                                blockRepo.insertOrUpdateRule(
-                                                    AppBlockRule(
-                                                        packageName = appInfo.packageName,
-                                                        appName = appInfo.appName,
-                                                        isBlocked = true,
-                                                        dailyLimitMinutes = 30,
-                                                        category = "Distracting"
-                                                    )
-                                                )
-                                            }
-                                        }
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    .clickable { toggleAppSelection(!isSelected) }
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                                    .testTag("app_picker_row_${appInfo.packageName}"),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -492,12 +425,30 @@ fun BlocksScreen() {
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
-                                        Text(
-                                            text = appInfo.appName,
-                                            color = Neutral100,
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontSize = 14.sp
-                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = appInfo.appName,
+                                                color = Neutral100,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 14.sp
+                                            )
+                                            if (appInfo.isGame) {
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(Gold)
+                                                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "GAME",
+                                                        color = Color.Black,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 9.sp
+                                                    )
+                                                }
+                                            }
+                                        }
                                         Text(
                                             text = appInfo.packageName,
                                             color = Neutral90,
@@ -506,147 +457,20 @@ fun BlocksScreen() {
                                     }
                                 }
 
-                                if (isAlreadyAdded) {
-                                    Text(
-                                        text = "Added ✓",
-                                        color = PrimaryGreen,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = { checked -> toggleAppSelection(checked) },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = PrimaryGreen,
+                                        checkmarkColor = Color.Black,
+                                        uncheckedColor = Neutral90
                                     )
-                                } else {
-                                    Button(
-                                        onClick = {
-                                            scope.launch {
-                                                blockRepo.insertOrUpdateRule(
-                                                    AppBlockRule(
-                                                        packageName = appInfo.packageName,
-                                                        appName = appInfo.appName,
-                                                        isBlocked = true,
-                                                        dailyLimitMinutes = 30,
-                                                        category = "Distracting"
-                                                    )
-                                                )
-                                            }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                            horizontal = 12.dp,
-                                            vertical = 4.dp
-                                        ),
-                                        modifier = Modifier.height(32.dp)
-                                    ) {
-                                        Text(
-                                            text = "+ Add",
-                                            color = Color.Black,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                }
+                                )
                             }
                         }
                     }
                 }
             }
-        }
-    }
-
-    // =========================================================================
-    // ADD CHANNEL DIALOG
-    // =========================================================================
-    if (showAddChannelDialog) {
-        var channelName by remember { mutableStateOf("") }
-        var channelHandle by remember { mutableStateOf("") }
-
-        AlertDialog(
-            onDismissRequest = { showAddChannelDialog = false },
-            title = { Text(text = "Add Study Channel", color = Neutral100, fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = channelName,
-                        onValueChange = { channelName = it },
-                        label = { Text("Channel Name (e.g. 3Blue1Brown)") },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Neutral100,
-                            unfocusedTextColor = Neutral100,
-                            focusedBorderColor = PrimaryGreen,
-                            unfocusedBorderColor = Neutral90
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = channelHandle,
-                        onValueChange = { channelHandle = it },
-                        label = { Text("Channel Handle (e.g. @3blue1brown)") },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Neutral100,
-                            unfocusedTextColor = Neutral100,
-                            focusedBorderColor = PrimaryGreen,
-                            unfocusedBorderColor = Neutral90
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (channelName.isNotBlank() || channelHandle.isNotBlank()) {
-                            scope.launch {
-                                ytRepo.addChannel(
-                                    channelName = channelName.ifBlank { channelHandle },
-                                    channelHandle = channelHandle.ifBlank { channelName }
-                                )
-                                showAddChannelDialog = false
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
-                ) {
-                    Text(text = "Add", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddChannelDialog = false }) {
-                    Text(text = "Cancel", color = Neutral90)
-                }
-            },
-            containerColor = DarkSurface
-        )
-    }
-}
-
-@Composable
-fun ChannelItemRow(
-    channel: StudyChannel,
-    onDelete: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Neutral10, RoundedCornerShape(10.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = channel.channelName,
-                color = Neutral100,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp
-            )
-            Text(
-                text = channel.channelHandle,
-                color = Neutral90,
-                fontSize = 12.sp
-            )
-        }
-        TextButton(onClick = onDelete) {
-            Text(text = "Remove", color = ErrorToastBackground, fontSize = 12.sp)
         }
     }
 }
@@ -673,12 +497,30 @@ fun AppBlockRuleCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = rule.appName,
-                        color = Neutral100,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = rule.appName,
+                            color = Neutral100,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        if (rule.category.equals("Game", ignoreCase = true)) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Gold)
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "GAME",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 9.sp
+                                )
+                            }
+                        }
+                    }
                     Text(
                         text = rule.packageName,
                         color = Neutral90,

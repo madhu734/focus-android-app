@@ -1,5 +1,6 @@
 package com.personal.focus.ui.overlay
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
@@ -25,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,30 +36,48 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.personal.focus.FocusApplication
+import com.personal.focus.data.repository.FocusStateRepository
 import com.personal.focus.ui.theme.DarkSurface
 import com.personal.focus.ui.theme.DimTransparent
+import com.personal.focus.ui.theme.FocusTheme
 import com.personal.focus.ui.theme.GiantTimerTextStyle
 import com.personal.focus.ui.theme.NavBarColor
 import com.personal.focus.ui.theme.Neutral100
 import com.personal.focus.ui.theme.Neutral90
 import com.personal.focus.ui.theme.PrimaryGreen
-import com.personal.focus.ui.theme.FocusTheme
 
 /**
  * High-priority translucent overlay activity intercepting blocked app launches.
  */
 class OverlayActivity : ComponentActivity() {
 
+    private val targetPackageState = mutableStateOf("Distracting App")
+    private val blockReasonState = mutableStateOf(REASON_FOCUS_ACTIVE)
+
+    override fun attachBaseContext(newBase: Context?) {
+        if (newBase != null) {
+            try {
+                val config = Configuration(newBase.resources.configuration)
+                config.fontScale = 1.0f
+                super.attachBaseContext(newBase.createConfigurationContext(config))
+                return
+            } catch (_: Throwable) {
+            }
+        }
+        super.attachBaseContext(newBase)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FocusApplication.ensureInitialized(this)
         AppBlockOverlayManager.dismissOverlay()
         configureWindow()
-
-        val packageName = intent.getStringExtra(EXTRA_PACKAGE_NAME) ?: "Distracting App"
-        val blockReason = intent.getStringExtra(EXTRA_BLOCK_REASON) ?: REASON_FOCUS_ACTIVE
+        updateFromIntent(intent)
 
         setContent {
             FocusTheme {
+                val packageName by targetPackageState
+                val blockReason by blockReasonState
                 OverlayScreen(
                     packageName = packageName,
                     blockReason = blockReason,
@@ -67,37 +87,49 @@ class OverlayActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        AppBlockOverlayManager.dismissOverlay()
+        updateFromIntent(intent)
+    }
+
+    private fun updateFromIntent(intent: Intent?) {
+        targetPackageState.value = intent?.getStringExtra(EXTRA_PACKAGE_NAME) ?: "Distracting App"
+        blockReasonState.value = intent?.getStringExtra(EXTRA_BLOCK_REASON) ?: REASON_FOCUS_ACTIVE
+    }
+
     private fun configureWindow() {
-        val configuration = Configuration(resources.configuration)
-        configuration.fontScale = 1.0f
-        applyOverrideConfiguration(configuration)
-
-        window.navigationBarColor = NavBarColor.toArgb()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-        } else {
+        try {
             @Suppress("DEPRECATION")
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            )
+            overridePendingTransition(0, 0)
+            window.navigationBarColor = NavBarColor.toArgb()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+            } else {
+                @Suppress("DEPRECATION")
+                window.addFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                )
+            }
+        } catch (_: Throwable) {
         }
     }
 
     private fun returnToHomeScreen() {
         AppBlockOverlayManager.dismissOverlay()
-        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_HOME)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        try {
+            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(homeIntent)
+        } catch (_: Throwable) {
         }
-        startActivity(homeIntent)
         finish()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
     }
 
     @Deprecated("Deprecated in Java")
@@ -121,8 +153,7 @@ fun OverlayScreen(
     blockReason: String,
     onReturnHome: () -> Unit
 ) {
-    val app = try { FocusApplication.instance } catch (e: Exception) { null }
-    val remainingMillis by (app?.focusTimerRepository?.remainingTimeMillis?.collectAsState() ?: androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0L) })
+    val remainingMillis by FocusStateRepository.remainingTimeMillis.collectAsState()
 
     val minutes = (remainingMillis / 1000L) / 60
     val seconds = (remainingMillis / 1000L) % 60

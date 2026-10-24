@@ -1,6 +1,8 @@
 package com.personal.focus.ui.theme
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -28,6 +30,12 @@ private val DarkColorScheme = darkColorScheme(
     onError = Neutral100
 )
 
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 @Composable
 fun FocusTheme(
     content: @Composable () -> Unit
@@ -36,13 +44,16 @@ fun FocusTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as? Activity)?.window
-            if (window != null) {
-                window.statusBarColor = Neutral0.toArgb()
-                window.navigationBarColor = NavBarColor.toArgb()
-                val insetsController = WindowCompat.getInsetsController(window, view)
-                insetsController.isAppearanceLightStatusBars = false
-                insetsController.isAppearanceLightNavigationBars = false
+            try {
+                val window = view.context.findActivity()?.window
+                if (window != null) {
+                    window.navigationBarColor = NavBarColor.toArgb()
+                    val insetsController = WindowCompat.getInsetsController(window, view)
+                    insetsController.isAppearanceLightStatusBars = false
+                    insetsController.isAppearanceLightNavigationBars = false
+                }
+            } catch (_: Throwable) {
+                // Ignore window decoration errors on translucent overlay windows
             }
         }
     }

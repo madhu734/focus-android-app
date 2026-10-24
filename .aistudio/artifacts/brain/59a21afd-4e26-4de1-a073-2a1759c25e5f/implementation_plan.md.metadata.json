@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for fixing the Stats tab LazyColumn duplicate key crash, replacing all demo statistics with 100% real local Room DB and UsageStatsManager analytics, and compacting the Focus tab layout so all controls and the Start Focus button fit on a single screen without scrolling.",
+  "updatedAt":  "2026-10-24T15:42:00.577442645Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

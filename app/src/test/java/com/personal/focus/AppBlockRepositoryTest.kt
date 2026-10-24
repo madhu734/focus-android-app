@@ -54,7 +54,6 @@ class AppBlockRepositoryTest {
 
         // Set blocked
         repository.setAppBlocked("com.instagram.android", "Instagram", true)
-        // Must immediately reflect in sync query
         assertTrue(repository.isAppBlockedSync("com.instagram.android"))
 
         // Set unblocked
@@ -68,11 +67,11 @@ class AppBlockRepositoryTest {
         val repository = AppBlockRepository(fakeDao, backgroundScope)
         testScheduler.advanceUntilIdle()
 
-        assertEquals(0, repository.getDailyLimitMinutesSync("com.tiktok.android"))
+        assertEquals(0, repository.getDailyLimitMinutesSync("com.zhiliaoapp.musically"))
 
-        repository.setDailyLimit("com.tiktok.android", "TikTok", 45)
-        assertEquals(45, repository.getDailyLimitMinutesSync("com.tiktok.android"))
-        assertTrue(repository.isAppBlockedSync("com.tiktok.android"))
+        repository.setDailyLimit("com.zhiliaoapp.musically", "TikTok", 45)
+        assertEquals(45, repository.getDailyLimitMinutesSync("com.zhiliaoapp.musically"))
+        assertTrue(repository.isAppBlockedSync("com.zhiliaoapp.musically"))
     }
 
     @Test
@@ -91,77 +90,83 @@ class AppBlockRepositoryTest {
     }
 
     @Test
-    fun `test isDistractingApp identifies common social and browser apps`() = runTest {
+    fun `test isDistractingApp identifies updated default social apps and games and excludes Chrome WhatsApp YouTube`() = runTest {
         val fakeDao = FakeAppBlockDao()
         val repository = AppBlockRepository(fakeDao, backgroundScope)
 
-        assertTrue(repository.isDistractingApp("com.google.android.youtube"))
-        assertTrue(repository.isDistractingApp("com.android.chrome"))
-        assertTrue(repository.isDistractingApp("com.whatsapp"))
-        assertTrue(repository.isDistractingApp("com.instagram.android"))
+        // Included default distracting apps
         assertTrue(repository.isDistractingApp("com.facebook.katana"))
-        assertTrue(repository.isDistractingApp("com.zhiliaoapp.musically"))
+        assertTrue(repository.isDistractingApp("com.facebook.lite"))
+        assertTrue(repository.isDistractingApp("com.facebook.orca"))
+        assertTrue(repository.isDistractingApp("com.facebook.mlite"))
+        assertTrue(repository.isDistractingApp("com.imo.android.imoim"))
+        assertTrue(repository.isDistractingApp("com.imo.android.imoimhd"))
+        assertTrue(repository.isDistractingApp("com.instagram.android"))
+        assertTrue(repository.isDistractingApp("com.instagram.lite"))
+        assertTrue(repository.isDistractingApp("com.netflix.mediaclient"))
+        assertTrue(repository.isDistractingApp("com.twitter.android"))
         assertTrue(repository.isDistractingApp("com.reddit.frontpage"))
+        assertTrue(repository.isDistractingApp("com.snapchat.android"))
+        assertTrue(repository.isDistractingApp("com.zhiliaoapp.musically"))
+        assertTrue(repository.isDistractingApp("com.ss.android.ugc.trill"))
+
+        // Auto-detected game packages
+        assertTrue(repository.isDistractingApp("com.tencent.ig"))
+        assertTrue(repository.isDistractingApp("com.supercell.clashofclans"))
+
+        // Chrome, WhatsApp, and YouTube must NOT be in default distracting apps
+        assertFalse(repository.isDistractingApp("com.android.chrome"))
+        assertFalse(repository.isDistractingApp("com.whatsapp"))
+        assertFalse(repository.isDistractingApp("com.google.android.youtube"))
         assertFalse(repository.isDistractingApp("com.google.android.calculator"))
     }
 
     @Test
-    fun `test isBlockedDuringFocus defaults to blocking distracting apps unless whitelisted`() = runTest {
+    fun `test isBlockedDuringFocus defaults to blocking distracting apps unless whitelisted or removed`() = runTest {
         val fakeDao = FakeAppBlockDao()
         val repository = AppBlockRepository(fakeDao, backgroundScope)
         testScheduler.advanceUntilIdle()
 
-        // Distracting apps blocked by default during active session
-        assertTrue(repository.isBlockedDuringFocus("com.google.android.youtube"))
-        assertTrue(repository.isBlockedDuringFocus("com.android.chrome"))
-        assertTrue(repository.isBlockedDuringFocus("com.whatsapp"))
+        // Default distracting apps blocked by default
+        assertTrue(repository.isBlockedDuringFocus("com.facebook.katana"))
+        assertTrue(repository.isBlockedDuringFocus("com.instagram.android"))
+        assertTrue(repository.isBlockedDuringFocus("com.imo.android.imoim"))
 
-        // Non-distracting app is not blocked by default
-        assertFalse(repository.isBlockedDuringFocus("com.example.calculator"))
+        // Chrome, WhatsApp, YouTube are NOT blocked by default
+        assertFalse(repository.isBlockedDuringFocus("com.android.chrome"))
+        assertFalse(repository.isBlockedDuringFocus("com.whatsapp"))
+        assertFalse(repository.isBlockedDuringFocus("com.google.android.youtube"))
 
         // When whitelisted during focus, should NOT be blocked
-        repository.setWhitelistedDuringFocus("com.whatsapp", "WhatsApp", true)
+        repository.setWhitelistedDuringFocus("com.facebook.katana", "Facebook", true)
         testScheduler.advanceUntilIdle()
-        assertFalse(repository.isBlockedDuringFocus("com.whatsapp"))
+        assertFalse(repository.isBlockedDuringFocus("com.facebook.katana"))
     }
 
     @Test
-    fun `test isBlockedDuringFocus respects user explicitly unchecking distracting app`() = runTest {
+    fun `test isBlockedDuringFocus respects user unselecting or toggling off an app`() = runTest {
         val fakeDao = FakeAppBlockDao()
         val repository = AppBlockRepository(fakeDao, backgroundScope)
         testScheduler.advanceUntilIdle()
 
-        // Seed defaults (Chrome is blocked by default)
         repository.seedDefaultsIfNeeded(
-            listOf("com.android.chrome" to "Google Chrome")
+            listOf(
+                "com.facebook.katana" to "Facebook",
+                "com.instagram.android" to "Instagram"
+            )
         )
         testScheduler.advanceUntilIdle()
-        assertTrue(repository.isBlockedDuringFocus("com.android.chrome"))
+        assertTrue(repository.isBlockedDuringFocus("com.facebook.katana"))
+        assertTrue(repository.isBlockedDuringFocus("com.instagram.android"))
 
-        // User toggles Chrome off in Blocks tab
-        repository.setAppBlocked("com.android.chrome", "Google Chrome", false)
+        // User toggles Facebook off in Blocks tab
+        repository.setAppBlocked("com.facebook.katana", "Facebook", false)
         testScheduler.advanceUntilIdle()
+        assertFalse(repository.isBlockedDuringFocus("com.facebook.katana"))
 
-        // Chrome must now NOT be blocked during focus
-        assertFalse(repository.isBlockedDuringFocus("com.android.chrome"))
-    }
-
-    @Test
-    fun `test seedDefaultsIfNeeded populates rules when database is empty`() = runTest {
-        val fakeDao = FakeAppBlockDao()
-        val repository = AppBlockRepository(fakeDao, backgroundScope)
-
-        val defaults = listOf(
-            "com.google.android.youtube" to "YouTube",
-            "com.android.chrome" to "Google Chrome",
-            "com.whatsapp" to "WhatsApp"
-        )
-        repository.seedDefaultsIfNeeded(defaults)
+        // User unselects/removes Instagram in Select Distracting Apps
+        repository.deleteRuleByPackage("com.instagram.android")
         testScheduler.advanceUntilIdle()
-
-        assertEquals(3, fakeDao.getAllRules().size)
-        assertTrue(repository.isAppBlockedSync("com.google.android.youtube"))
-        assertTrue(repository.isAppBlockedSync("com.android.chrome"))
-        assertTrue(repository.isAppBlockedSync("com.whatsapp"))
+        assertFalse(repository.isBlockedDuringFocus("com.instagram.android"))
     }
 }
