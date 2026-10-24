@@ -265,11 +265,30 @@ class FocusTimerRepository(
             return Result.failure(IllegalStateException("Can't turn off while Strict Mode is active."))
         }
 
+        val nowRealtime = timeProvider()
+        val pauseSpent = if (current.sessionStatus == SessionStatus.PAUSED) {
+            pauseElapsedRealtimeStart?.let { (nowRealtime - it).coerceAtLeast(0L) } ?: 0L
+        } else {
+            0L
+        }
+        val breakSpent = if (current.isInBreak) {
+            breakElapsedRealtimeStart?.let { (nowRealtime - it).coerceAtLeast(0L) } ?: 0L
+        } else {
+            0L
+        }
         breakElapsedRealtimeStart = null
         pauseElapsedRealtimeStart = null
-        val elapsedMs = (timeProvider() - current.elapsedRealtimeStart).coerceAtLeast(0L)
+
+        val rawElapsedMs = (nowRealtime - current.elapsedRealtimeStart - pauseSpent - breakSpent).coerceAtLeast(0L)
+        val elapsedMs = if (current.durationInMillis != null) {
+            rawElapsedMs.coerceAtMost(current.durationInMillis)
+        } else {
+            rawElapsedMs
+        }
         val updated = current.copy(
             sessionStatus = SessionStatus.CANCELLED,
+            isInBreak = false,
+            breakExpiryTime = null,
             totalFocusTimeSpentMillis = elapsedMs
         )
         _activeSession.value = updated

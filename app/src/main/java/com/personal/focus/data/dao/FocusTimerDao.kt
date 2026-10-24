@@ -32,6 +32,6 @@ interface FocusTimerDao {
     @Query("UPDATE focus_timer_session SET sessionStatus = 'CANCELLED' WHERE sessionStatus = 'ACTIVE' OR sessionStatus = 'PAUSED'")
     suspend fun cancelAllActiveSessions()
 
-    @Query("SELECT SUM(totalFocusTimeSpentMillis) FROM focus_timer_session WHERE sessionStatus = 'COMPLETED'")
+    @Query("SELECT SUM(totalFocusTimeSpentMillis) FROM focus_timer_session WHERE totalFocusTimeSpentMillis > 0")
     fun getTotalCompletedFocusTimeMillisFlow(): Flow<Long?>
 }

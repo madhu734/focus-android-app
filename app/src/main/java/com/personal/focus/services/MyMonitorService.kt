@@ -26,17 +26,26 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import android.app.NotificationManager
+import com.personal.focus.data.model.FocusMode
+import com.personal.focus.data.model.FocusTimerSession
+import com.personal.focus.data.model.SessionStatus
+import kotlinx.coroutines.flow.combine
+
 /**
  * Persistent Foreground Watchdog Service running in RAM to monitor
- * app usage limits and enforce focus session blocks via UsageStatsManager
- * and FocusStateRepository.
+ * app usage limits, display live VPN-style focus timer notifications,
+ * and enforce focus session blocks via UsageStatsManager and FocusStateRepository.
  */
 class MyMonitorService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var monitorJob: Job? = null
+    private var notificationTickerJob: Job? = null
     private var lastInterceptedPackage: String? = null
     private var lastInterceptTime: Long = 0L
+    private var lastNotifiedSecond: Long = -1L
+    private var lastNotifiedStatus: String = ""
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -44,37 +53,147 @@ class MyMonitorService : Service() {
         super.onCreate()
         FocusApplication.ensureInitialized(applicationContext)
         startForegroundNotification()
+        startLiveNotificationObserver()
         startWatchdogLoop()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         FocusApplication.ensureInitialized(applicationContext)
         startForegroundNotification()
+        if (notificationTickerJob == null || notificationTickerJob?.isActive == false) {
+            startLiveNotificationObserver()
+        }
         if (monitorJob == null || monitorJob?.isActive == false) {
             startWatchdogLoop()
         }
         return START_STICKY
     }
 
+    private fun startLiveNotificationObserver() {
+        notificationTickerJob?.cancel()
+        notificationTickerJob = serviceScope.launch {
+            combine(
+                FocusStateRepository.activeSession,
+                FocusStateRepository.remainingTimeMillis
+            ) { session, remainingMs ->
+                session to remainingMs
+            }.collect { (session, remainingMs) ->
+                val currentSecond = remainingMs / 1000L
+                val statusKey = "${session?.sessionId}_${session?.sessionStatus}_${session?.isInBreak}_${session?.mode}"
+                if (currentSecond != lastNotifiedSecond || statusKey != lastNotifiedStatus) {
+                    lastNotifiedSecond = currentSecond
+                    lastNotifiedStatus = statusKey
+                    updateLiveNotification(session, remainingMs)
+                }
+            }
+        }
+    }
+
+    private fun buildServiceNotification(
+        session: FocusTimerSession?,
+        remainingMillis: Long
+    ): Notification {
+        val launchIntent = Intent(this, HomePageActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            launchIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val isActiveOrPaused = session != null &&
+                (session.sessionStatus == SessionStatus.ACTIVE || session.sessionStatus == SessionStatus.PAUSED)
+
+        val contentTitle: String
+        val contentText: String
+        var progressMax = 0
+        var progressCurrent = 0
+
+        if (isActiveOrPaused && session != null) {
+            val totalSeconds = (remainingMillis / 1000L).coerceAtLeast(0L)
+            val hours = totalSeconds / 3600L
+            val minutes = (totalSeconds % 3600L) / 60L
+            val seconds = totalSeconds % 60L
+            val formattedTimer = if (hours > 0L) {
+                String.format("%02d:%02d:%02d", hours, minutes, seconds)
+            } else {
+                String.format("%02d:%02d", minutes, seconds)
+            }
+
+            val modeLabel = when (session.mode) {
+                FocusMode.COUNTDOWN -> "Countdown"
+                FocusMode.STOPWATCH -> "Stopwatch"
+                FocusMode.POMODORO -> "Pomodoro"
+            }
+
+            contentTitle = when {
+                session.isInBreak -> "☕ Short Break • $formattedTimer remaining"
+                session.sessionStatus == SessionStatus.PAUSED -> "⏸️ Focus Session Paused • $formattedTimer"
+                session.mode == FocusMode.STOPWATCH -> "⏱️ Stopwatch Focus • $formattedTimer elapsed"
+                else -> "⚡ Focus Session Active • $formattedTimer remaining"
+            }
+
+            contentText = when {
+                session.isInBreak -> "$modeLabel Mode • Recharge and get ready"
+                session.isLockedIn -> "🔒 Strict Mode Locked • Stay focused!"
+                else -> "$modeLabel Mode • Distracting apps are blocked 🔒"
+            }
+
+            when {
+                session.isInBreak -> {
+                    val maxSec = (session.breakDurationInMillis / 1000L).toInt().coerceAtLeast(1)
+                    progressMax = maxSec
+                    progressCurrent = totalSeconds.toInt().coerceIn(0, maxSec)
+                }
+                session.mode != FocusMode.STOPWATCH -> {
+                    val maxSec = ((session.durationInMillis ?: 0L) / 1000L).toInt().coerceAtLeast(1)
+                    progressMax = maxSec
+                    progressCurrent = totalSeconds.toInt().coerceIn(0, maxSec)
+                }
+                else -> {
+                    progressMax = 0
+                    progressCurrent = 0
+                }
+            }
+        } else {
+            contentTitle = "🛡️ Focus Protection Active"
+            contentText = getString(R.string.monitoring_notification_text)
+        }
+
+        // VPN-Style persistent ongoing notification without any Stop/Cancel/Give Up action buttons
+        return NotificationCompat.Builder(this, FocusApplication.CHANNEL_MONITORING)
+            .setContentTitle(contentTitle)
+            .setContentText(contentText)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setColor(0xFF83D65C.toInt())
+            .setColorized(true)
+            .setProgress(progressMax, progressCurrent, false)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .build()
+    }
+
+    private fun updateLiveNotification(session: FocusTimerSession?, remainingMillis: Long) {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            val notification = buildServiceNotification(session, remainingMillis)
+            notificationManager?.notify(NOTIFICATION_ID, notification)
+        } catch (_: Throwable) {
+        }
+    }
+
     private fun startForegroundNotification() {
         try {
-            val launchIntent = Intent(this, HomePageActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(
-                this,
-                0,
-                launchIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
-            val notification: Notification = NotificationCompat.Builder(this, FocusApplication.CHANNEL_MONITORING)
-                .setContentTitle(getString(R.string.monitoring_notification_title))
-                .setContentText(getString(R.string.monitoring_notification_text))
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setOngoing(true)
-                .setContentIntent(pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setCategory(NotificationCompat.CATEGORY_SERVICE)
-                .build()
+            val session = FocusStateRepository.activeSession.value
+            val remainingMs = FocusStateRepository.remainingTimeMillis.value
+            val notification = buildServiceNotification(session, remainingMs)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
@@ -88,9 +207,13 @@ class MyMonitorService : Service() {
         } catch (_: Throwable) {
             try {
                 val fallbackNotification = NotificationCompat.Builder(this, FocusApplication.CHANNEL_MONITORING)
-                    .setContentTitle(getString(R.string.monitoring_notification_title))
+                    .setContentTitle("🛡️ Focus Protection Active")
                     .setContentText(getString(R.string.monitoring_notification_text))
                     .setSmallIcon(R.mipmap.ic_launcher)
+                    .setColor(0xFF83D65C.toInt())
+                    .setOngoing(true)
+                    .setOnlyAlertOnce(true)
+                    .setSilent(true)
                     .build()
                 startForeground(NOTIFICATION_ID, fallbackNotification)
             } catch (_: Throwable) {
@@ -107,8 +230,6 @@ class MyMonitorService : Service() {
             while (isActive) {
                 try {
                     FocusApplication.ensureInitialized(applicationContext)
-                    val blockRepo = FocusStateRepository.appBlockRepository
-                    val usageRepo = FocusStateRepository.usageStatsRepository
 
                     val currentForeground = getForegroundPackage(usageStatsManager)
                     if (currentForeground != null) {
@@ -119,25 +240,12 @@ class MyMonitorService : Service() {
                         } else if (isValidTargetPackage(currentForeground)) {
                             val isFocusActive = FocusStateRepository.isSessionActiveNow()
 
-                            // 1. Active Focus Session Enforcement via FocusStateRepository
+                            // Active Focus Session Enforcement ONLY (Daily Screentime Limit removed)
                             if (isFocusActive && FocusStateRepository.isPackageBlockedDuringFocus(currentForeground)) {
                                 triggerOverlay(
                                     targetPackage = currentForeground,
                                     blockReason = OverlayActivity.REASON_FOCUS_ACTIVE
                                 )
-                            } else {
-                                // 2. Daily App Usage Quota Enforcement
-                                val limitMinutes = blockRepo?.getDailyLimitMinutesSync(currentForeground) ?: 0
-                                if (limitMinutes > 0 && usageRepo != null) {
-                                    val usageMs = usageRepo.getPackageTodayUsageMillis(currentForeground)
-                                    val limitMs = limitMinutes * 60 * 1000L
-                                    if (usageMs >= limitMs) {
-                                        triggerOverlay(
-                                            targetPackage = currentForeground,
-                                            blockReason = OverlayActivity.REASON_LIMIT_EXCEEDED
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
@@ -223,6 +331,7 @@ class MyMonitorService : Service() {
     }
 
     override fun onDestroy() {
+        notificationTickerJob?.cancel()
         monitorJob?.cancel()
         super.onDestroy()
     }

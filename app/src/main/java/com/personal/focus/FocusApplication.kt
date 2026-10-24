@@ -41,21 +41,29 @@ class FocusApplication : Application() {
 
         database = FocusDatabase.getInstance(this)
         focusTimerRepository = FocusTimerRepository(database.focusTimerDao())
-        focusTimerRepository.onSessionEnded = {
-            ProxyLauncherActivity.setComponentEnabled(this, false)
-            AppBlockOverlayManager.dismissOverlay()
-        }
-        // Auto-heal on startup: ensure ProxyLauncherActivity is disabled unless session is active with launcher blocked
-        val active = focusTimerRepository.activeSession.value
-        if (active == null || active.sessionStatus != SessionStatus.ACTIVE || !active.isLauncherBlocked) {
-            ProxyLauncherActivity.setComponentEnabled(this, false)
-        }
         appBlockRepository = AppBlockRepository(database.appBlockDao())
         youTubeStudyRepository = YouTubeStudyRepository(database.studyChannelDao())
         usageStatsRepository = UsageStatsRepository(
             dailyUsageDao = database.dailyUsageDao(),
             focusTimerDao = database.focusTimerDao()
         )
+        usageStatsRepository.checkAndRefreshUsageSyncFlag(this)
+
+        focusTimerRepository.onSessionEnded = {
+            ProxyLauncherActivity.setComponentEnabled(this, false)
+            AppBlockOverlayManager.dismissOverlay()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    usageStatsRepository.syncUsageFromSystem(this@FocusApplication)
+                } catch (_: Throwable) {
+                }
+            }
+        }
+        // Auto-heal on startup: ensure ProxyLauncherActivity is disabled unless session is active with launcher blocked
+        val active = focusTimerRepository.activeSession.value
+        if (active == null || active.sessionStatus != SessionStatus.ACTIVE || !active.isLauncherBlocked) {
+            ProxyLauncherActivity.setComponentEnabled(this, false)
+        }
 
         FocusStateRepository.initialize(
             context = this,

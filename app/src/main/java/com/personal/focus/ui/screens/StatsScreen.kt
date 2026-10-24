@@ -25,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,10 +38,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.personal.focus.FocusApplication
 import com.personal.focus.data.model.DailyAppUsageRecord
 import com.personal.focus.data.repository.FocusStateRepository
@@ -63,9 +67,36 @@ data class WeeklyDayStat(
     val isToday: Boolean
 )
 
+/**
+ * Formats total minutes as "Xh Ym" when >= 60 minutes, or "Ym" when < 60 minutes.
+ */
+fun formatMinutesToHoursMins(totalMinutes: Int): String {
+    if (totalMinutes <= 0) return "0m"
+    val hours = totalMinutes / 60
+    val mins = totalMinutes % 60
+    return if (hours > 0) {
+        "${hours}h ${mins}m"
+    } else {
+        "${mins}m"
+    }
+}
+
+/**
+ * Formats milliseconds into "Xh Ym", "Ym", or "Zs" (if under 1 minute).
+ */
+fun formatMillisToHoursMins(durationMillis: Long): String {
+    val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
+    val totalMinutes = (totalSeconds / 60L).toInt()
+    if (totalMinutes <= 0) {
+        return if (totalSeconds > 0L) "${totalSeconds}s" else "0m"
+    }
+    return formatMinutesToHoursMins(totalMinutes)
+}
+
 @Composable
 fun StatsScreen() {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     remember(context) { FocusApplication.ensureInitialized(context) }
     val usageRepo = FocusStateRepository.usageStatsRepository ?: FocusApplication.instance.usageStatsRepository
@@ -76,6 +107,7 @@ fun StatsScreen() {
     val completedFocusDateKeys by usageRepo.completedFocusDateKeys.collectAsState()
     val currentStreakDays by usageRepo.currentStreakDays.collectAsState()
     val weeklyUsageSummary by usageRepo.weeklyUsageSummary.collectAsState()
+    val isUsageSynced by usageRepo.isUsageSynced.collectAsState()
 
     var isSyncing by remember { mutableStateOf(false) }
 
@@ -95,15 +127,39 @@ fun StatsScreen() {
             .sortedByDescending { it.usageDurationMillis }
     }
 
+    // Automatically sync on screen entry and whenever returning to foreground
     LaunchedEffect(Unit) {
         try {
+            usageRepo.checkAndRefreshUsageSyncFlag(context)
             usageRepo.syncUsageFromSystem(context)
         } catch (_: Throwable) {
         }
     }
 
-    val savedHours = (totalTimeSavedMillis / 1000L) / 3600
-    val savedMins = ((totalTimeSavedMillis / 1000L) % 3600) / 60
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch {
+                    try {
+                        usageRepo.checkAndRefreshUsageSyncFlag(context)
+                        usageRepo.syncUsageFromSystem(context)
+                    } catch (_: Throwable) {
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // Include even short focus sessions (1-2 mins or partial minutes) in Attention Preserved
+    val totalSavedMinutes = ((totalTimeSavedMillis / 1000L) / 60L).let { mins ->
+        if (mins == 0L && totalTimeSavedMillis > 0L) 1L else mins
+    }
+    val savedHours = totalSavedMinutes / 60L
+    val savedMins = totalSavedMinutes % 60L
     val savedText = "${savedHours}h ${savedMins}m Saved"
 
     val screenHours = (totalScreenTimeMillis / 1000L) / 3600
@@ -286,31 +342,37 @@ fun StatsScreen() {
                         fontSize = 14.sp
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // One-time Sync Usage Stats button: permanently hidden once synced or Usage Access is active
+                    if (!isUsageSynced) {
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            if (!isSyncing) {
-                                scope.launch {
-                                    isSyncing = true
-                                    try {
-                                        usageRepo.syncUsageFromSystem(context)
-                                    } finally {
-                                        isSyncing = false
+                        Button(
+                            onClick = {
+                                if (!isSyncing) {
+                                    scope.launch {
+                                        isSyncing = true
+                                        try {
+                                            usageRepo.syncUsageFromSystem(
+                                                context = context,
+                                                markSyncedByUser = true
+                                            )
+                                        } finally {
+                                            isSyncing = false
+                                        }
                                     }
                                 }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Neutral10),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.testTag("sync_usage_stats_button")
-                    ) {
-                        Text(
-                            text = if (isSyncing) "Syncing..." else "Sync Usage Stats",
-                            color = PrimaryGreen,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Neutral10),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.testTag("sync_usage_stats_button")
+                        ) {
+                            Text(
+                                text = if (isSyncing) "Syncing..." else "Sync Usage Stats",
+                                color = PrimaryGreen,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
@@ -318,7 +380,7 @@ fun StatsScreen() {
         }
 
         // =========================================================================
-        // REAL WEEKLY USAGE BAR CHART
+        // REAL WEEKLY USAGE BAR CHART (Fixed bottom labels + Xh Ym formatting)
         // =========================================================================
         item {
             Card(
@@ -347,49 +409,70 @@ fun StatsScreen() {
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     val maxMinutes = (weeklyData.maxOfOrNull { it.screentimeMinutes } ?: 60).coerceAtLeast(60)
+                    val maxBarHeight = 88.dp
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp),
+                            .height(144.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.Bottom
                     ) {
                         weeklyData.forEach { dayStat ->
                             val heightFraction = if (dayStat.screentimeMinutes <= 0) {
-                                0.04f
+                                0.05f
                             } else {
                                 (dayStat.screentimeMinutes.toFloat() / maxMinutes.toFloat()).coerceIn(0.08f, 1f)
                             }
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Bottom,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
                             ) {
-                                Text(
-                                    text = "${dayStat.screentimeMinutes}m",
-                                    color = if (dayStat.isToday) PrimaryGreen else Neutral90,
-                                    fontSize = 10.sp,
-                                    fontWeight = if (dayStat.isToday) FontWeight.Bold else FontWeight.Normal
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Box(
+                                // Upper flexible bar + duration text container
+                                Column(
                                     modifier = Modifier
-                                        .width(16.dp)
-                                        .fillMaxHeight(heightFraction)
-                                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                        .background(if (dayStat.isToday) PrimaryGreen else Neutral10)
-                                )
+                                        .weight(1f)
+                                        .fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Bottom
+                                ) {
+                                    Text(
+                                        text = formatMinutesToHoursMins(dayStat.screentimeMinutes),
+                                        color = if (dayStat.isToday) PrimaryGreen else Neutral90,
+                                        fontSize = 9.sp,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        fontWeight = if (dayStat.isToday) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .width(16.dp)
+                                            .height(maxBarHeight * heightFraction)
+                                            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                            .background(if (dayStat.isToday) PrimaryGreen else Neutral10)
+                                    )
+                                }
+
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = dayStat.dayLabel,
-                                    color = if (dayStat.isToday) PrimaryGreen else Neutral90,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (dayStat.isToday) FontWeight.Bold else FontWeight.Normal
-                                )
+
+                                // Dedicated fixed-height bottom day label (M T W T F S S) that never clips
+                                Box(
+                                    modifier = Modifier.height(18.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = dayStat.dayLabel,
+                                        color = if (dayStat.isToday) PrimaryGreen else Neutral90,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (dayStat.isToday) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
                             }
                         }
                     }
@@ -459,9 +542,7 @@ fun AppUsageItem(
     record: DailyAppUsageRecord,
     maxUsageMillis: Long
 ) {
-    val mins = (record.usageDurationMillis / 1000L) / 60
-    val secs = ((record.usageDurationMillis / 1000L) % 60)
-    val durationLabel = if (mins > 0) "${mins}m" else "${secs}s"
+    val durationLabel = formatMillisToHoursMins(record.usageDurationMillis)
     val progress = (record.usageDurationMillis.toFloat() / maxUsageMillis.toFloat()).coerceIn(0f, 1f)
 
     Card(

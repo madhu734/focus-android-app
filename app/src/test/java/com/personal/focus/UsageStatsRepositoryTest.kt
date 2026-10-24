@@ -135,5 +135,48 @@ class UsageStatsRepositoryTest {
         assertEquals(25 * 60 * 1000L, repository.totalTimeSavedMillis.value)
         assertEquals(1, repository.currentStreakDays.value)
         assertTrue(repository.completedFocusDateKeys.value.contains(repository.getTodayDateKey()))
+
+        // Early cancelled session after 2 minutes of focus also counts toward Attention Preserved
+        fakeTimerDao.insertSession(
+            FocusTimerSession(
+                sessionId = 2L,
+                startTime = now,
+                durationInMillis = 25 * 60 * 1000L,
+                mode = FocusMode.COUNTDOWN,
+                isLockedIn = false,
+                disableEndButtonShown = false,
+                isUninstallBlocked = true,
+                isLauncherBlocked = false,
+                blockNotifications = true,
+                breaksAllowedCount = 1,
+                breakDurationInMillis = 5 * 60 * 1000L,
+                longBreakDurationInMillis = 15 * 60 * 1000L,
+                sessionStatus = SessionStatus.CANCELLED,
+                elapsedRealtimeStart = 2000L,
+                totalFocusTimeSpentMillis = 2 * 60 * 1000L
+            )
+        )
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(2 * 60 * 1000L, repository.totalTimeSavedMillis.value)
+    }
+
+    @Test
+    fun `test flexible give up phrase verification ignores case punctuation and extra spaces`() {
+        assertTrue(com.personal.focus.ui.screens.isGiveUpVerificationPhraseMatched("sorry syllabus sesh hoynai"))
+        assertTrue(com.personal.focus.ui.screens.isGiveUpVerificationPhraseMatched("  SORRY,  Syllabus   sesh hoynai!!?! "))
+        assertTrue(com.personal.focus.ui.screens.isGiveUpVerificationPhraseMatched("Sorry. Syllabus, sesh 'hoynai'..."))
+        assertFalse(com.personal.focus.ui.screens.isGiveUpVerificationPhraseMatched("syllabus sesh hoyeche"))
+        assertFalse(com.personal.focus.ui.screens.isGiveUpVerificationPhraseMatched(""))
+    }
+
+    @Test
+    fun `test Xh Ym formatting for weekly bar chart and app usage list`() {
+        assertEquals("22h 22m", com.personal.focus.ui.screens.formatMinutesToHoursMins(1342))
+        assertEquals("11h 24m", com.personal.focus.ui.screens.formatMinutesToHoursMins(684))
+        assertEquals("3h 44m", com.personal.focus.ui.screens.formatMinutesToHoursMins(224))
+        assertEquals("45m", com.personal.focus.ui.screens.formatMinutesToHoursMins(45))
+        assertEquals("0m", com.personal.focus.ui.screens.formatMinutesToHoursMins(0))
+        assertEquals("3h 44m", com.personal.focus.ui.screens.formatMillisToHoursMins(224L * 60_000L))
     }
 }

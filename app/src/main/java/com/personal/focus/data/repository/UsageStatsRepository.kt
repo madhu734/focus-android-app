@@ -1,5 +1,6 @@
 package com.personal.focus.data.repository
 
+import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -66,6 +67,10 @@ class UsageStatsRepository(
     private val _weeklyUsageSummary = MutableStateFlow<Map<String, Long>>(emptyMap())
     val weeklyUsageSummary: StateFlow<Map<String, Long>> = _weeklyUsageSummary.asStateFlow()
 
+    // Persistent flag indicating whether initial usage sync has been performed or Usage Access is active
+    private val _isUsageSynced = MutableStateFlow(false)
+    val isUsageSynced: StateFlow<Boolean> = _isUsageSynced.asStateFlow()
+
     init {
         scope.launch {
             dailyUsageDao.getUsageForDateFlow(getTodayDateKey()).collect { rawList ->
@@ -78,18 +83,20 @@ class UsageStatsRepository(
             }
         }
 
-        // Observe real completed FocusTimerSessions from Room DB for Time Saved & Streak
+        // Observe FocusTimerSessions from Room DB for Time Saved & Streak
+        // Includes both COMPLETED and CANCELLED (early exit) sessions that have actual elapsed focus time > 0
         if (focusTimerDao != null) {
             scope.launch {
                 focusTimerDao.getAllSessionsFlow().collect { sessions ->
-                    val completedSessions = sessions.filter {
-                        it.sessionStatus == SessionStatus.COMPLETED && it.totalFocusTimeSpentMillis > 0L
+                    val recordedFocusSessions = sessions.filter {
+                        (it.sessionStatus == SessionStatus.COMPLETED || it.sessionStatus == SessionStatus.CANCELLED) &&
+                                it.totalFocusTimeSpentMillis > 0L
                     }
-                    // Time saved = actual focus duration completed by user (0 on fresh install)
-                    val totalSaved = completedSessions.sumOf { it.totalFocusTimeSpentMillis }
+                    // Time saved = actual focus duration spent by user across completed and early-stopped sessions
+                    val totalSaved = recordedFocusSessions.sumOf { it.totalFocusTimeSpentMillis }
                     _totalTimeSavedMillis.value = totalSaved
 
-                    val completedDates = completedSessions
+                    val completedDates = recordedFocusSessions
                         .map { formatDateKey(Date(it.startTime)) }
                         .toSet()
                     _completedFocusDateKeys.value = completedDates
@@ -195,11 +202,60 @@ class UsageStatsRepository(
         }
     }
 
+    fun hasUsageAccessPermission(context: Context): Boolean {
+        return try {
+            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
+            val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                appOps.unsafeCheckOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    context.packageName
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                appOps.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    context.packageName
+                )
+            }
+            mode == AppOpsManager.MODE_ALLOWED
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    fun checkAndRefreshUsageSyncFlag(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_USAGE_SYNC, Context.MODE_PRIVATE)
+        val alreadySynced = prefs.getBoolean(KEY_IS_USAGE_SYNCED, false)
+        val hasPerm = hasUsageAccessPermission(context)
+        val effective = alreadySynced || hasPerm
+        if (effective && !alreadySynced) {
+            prefs.edit().putBoolean(KEY_IS_USAGE_SYNCED, true).apply()
+        }
+        _isUsageSynced.value = effective
+        return effective
+    }
+
+    fun markUsageSynced(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_USAGE_SYNC, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_IS_USAGE_SYNCED, true).apply()
+        _isUsageSynced.value = true
+    }
+
     /**
      * Polls UsageStatsManager for the current week's daily foreground durations,
      * groups duplicate entries by packageName, excludes com.personal.focus, and updates Room.
      */
-    suspend fun syncUsageFromSystem(context: Context) = withContext(Dispatchers.IO) {
+    suspend fun syncUsageFromSystem(
+        context: Context,
+        markSyncedByUser: Boolean = false
+    ) = withContext(Dispatchers.IO) {
+        if (markSyncedByUser || hasUsageAccessPermission(context)) {
+            markUsageSynced(context)
+        } else {
+            checkAndRefreshUsageSyncFlag(context)
+        }
         val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager ?: return@withContext
         val packageManager = context.packageManager
         val selfPkg = context.packageName
@@ -331,5 +387,7 @@ class UsageStatsRepository(
 
     companion object {
         const val SELF_PACKAGE = "com.personal.focus"
+        private const val PREFS_USAGE_SYNC = "focus_usage_sync_prefs"
+        private const val KEY_IS_USAGE_SYNCED = "is_usage_synced"
     }
 }

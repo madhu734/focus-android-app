@@ -1,6 +1,11 @@
 package com.personal.focus.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -24,9 +30,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -47,10 +56,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.personal.focus.FocusApplication
 import com.personal.focus.data.model.FocusMode
 import com.personal.focus.data.model.SessionStatus
 import com.personal.focus.data.repository.FocusStateRepository
+import com.personal.focus.services.MyMonitorService
 import com.personal.focus.ui.components.PermissionChecklistCard
 import com.personal.focus.ui.launcher.ProxyLauncherActivity
 import com.personal.focus.ui.overlay.AppBlockOverlayManager
@@ -66,6 +77,20 @@ import com.personal.focus.ui.theme.PrimaryGreen
 import com.personal.focus.ui.theme.SecondaryOrange
 import kotlinx.coroutines.launch
 
+/**
+ * Flexible 2-layer verification matcher for ending a focus session early.
+ * Ignores case, extra whitespace, and all punctuation marks (.,!?' etc.).
+ */
+fun isGiveUpVerificationPhraseMatched(input: String): Boolean {
+    val cleaned = input
+        .lowercase()
+        .replace(Regex("[^a-z0-9\\s]"), " ")
+        .trim()
+        .replace(Regex("\\s+"), " ")
+    return cleaned == "sorry syllabus sesh hoynai" ||
+            cleaned.replace(" ", "") == "sorrysyllabusseshhoynai"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FocusScreen() {
@@ -79,6 +104,14 @@ fun FocusScreen() {
     val remainingMillis by focusRepo.remainingTimeMillis.collectAsState()
     val isStudyModeActive by ytRepo.isStudyModeEnabled.collectAsState()
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            MyMonitorService.startService(context)
+        }
+    }
+
     // Default mode is COUNTDOWN (first option on the left)
     var selectedMode by remember { mutableStateOf(FocusMode.COUNTDOWN) }
     var durationMinutes by remember { mutableLongStateOf(25L) }
@@ -91,8 +124,10 @@ fun FocusScreen() {
     var blockNotifications by remember { mutableStateOf(true) }
     var breaksAllowedCount by remember { mutableIntStateOf(1) }
 
-    // Bottom Sheet Control
+    // Bottom Sheet & Give Up Confirmation Dialog Control
     var showUltraFocusSheet by remember { mutableStateOf(false) }
+    var showGiveUpDialog by remember { mutableStateOf(false) }
+    var giveUpInputText by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val scrollState = rememberScrollState()
@@ -331,19 +366,8 @@ fun FocusScreen() {
                     if (!session.isLockedIn || !session.disableEndButtonShown) {
                         OutlinedButton(
                             onClick = {
-                                scope.launch {
-                                    val result = focusRepo.giveUpSession()
-                                    if (result.isFailure) {
-                                        Toast.makeText(
-                                            context,
-                                            result.exceptionOrNull()?.message ?: "Cannot end session",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    } else {
-                                        ProxyLauncherActivity.setComponentEnabled(context, false)
-                                        AppBlockOverlayManager.dismissOverlay()
-                                    }
-                                }
+                                giveUpInputText = ""
+                                showGiveUpDialog = true
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -597,6 +621,18 @@ fun FocusScreen() {
             // Start Focus Button
             Button(
                 onClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val isGranted = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (!isGranted) {
+                            try {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } catch (_: Throwable) {
+                            }
+                        }
+                    }
                     scope.launch {
                         val durationMs = if (selectedMode == FocusMode.STOPWATCH) null else durationMinutes * 60 * 1000L
                         focusRepo.startSession(
@@ -612,6 +648,7 @@ fun FocusScreen() {
                         if (isLauncherBlocked) {
                             ProxyLauncherActivity.setComponentEnabled(context, true)
                         }
+                        MyMonitorService.startService(context)
                     }
                 },
                 modifier = Modifier
@@ -630,6 +667,129 @@ fun FocusScreen() {
                 )
             }
         }
+    }
+
+    // =========================================================================
+    // 2-LAYER GIVE UP CONFIRMATION DIALOG ("sorry syllabus sesh hoynai")
+    // =========================================================================
+    if (showGiveUpDialog) {
+        val isPhraseMatched = isGiveUpVerificationPhraseMatched(giveUpInputText)
+
+        AlertDialog(
+            onDismissRequest = {
+                showGiveUpDialog = false
+                giveUpInputText = ""
+            },
+            containerColor = DarkSurface,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    text = "End Focus Session Early?",
+                    color = Neutral100,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Do you really want to stop your focus session before completion? Your elapsed focus time so far will still be saved to your stats.",
+                        color = Neutral90,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "To confirm, type the phrase below:",
+                        color = Neutral90,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "\"sorry syllabus sesh hoynai\"",
+                        color = Gold,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = giveUpInputText,
+                        onValueChange = { giveUpInputText = it },
+                        placeholder = {
+                            Text(
+                                text = "sorry syllabus sesh hoynai",
+                                color = Neutral90.copy(alpha = 0.5f),
+                                fontSize = 13.sp
+                            )
+                        },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Neutral100,
+                            unfocusedTextColor = Neutral100,
+                            focusedBorderColor = if (isPhraseMatched) PrimaryGreen else Gold,
+                            unfocusedBorderColor = Neutral10,
+                            cursorColor = PrimaryGreen
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("give_up_verification_input")
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (isPhraseMatched) {
+                            scope.launch {
+                                val result = focusRepo.giveUpSession()
+                                if (result.isFailure) {
+                                    Toast.makeText(
+                                        context,
+                                        result.exceptionOrNull()?.message ?: "Cannot end session",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    showGiveUpDialog = false
+                                    giveUpInputText = ""
+                                    ProxyLauncherActivity.setComponentEnabled(context, false)
+                                    AppBlockOverlayManager.dismissOverlay()
+                                }
+                            }
+                        }
+                    },
+                    enabled = isPhraseMatched,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ErrorToastBackground,
+                        disabledContainerColor = Neutral10
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.testTag("confirm_give_up_button")
+                ) {
+                    Text(
+                        text = "Confirm & Stop",
+                        color = if (isPhraseMatched) Neutral100 else Neutral90.copy(alpha = 0.5f),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showGiveUpDialog = false
+                        giveUpInputText = ""
+                    }
+                ) {
+                    Text(
+                        text = "Keep Focusing",
+                        color = PrimaryGreen,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        )
     }
 
     // =========================================================================

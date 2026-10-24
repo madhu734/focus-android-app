@@ -152,21 +152,10 @@ class MyMonitorInAppBlockService : AccessibilityService() {
         }
 
         // C. General App Interception Logic (DUAL-LAYER INTERCEPTION)
-        // 1. Focus Session Enforcement
+        // Focus Session Enforcement ONLY (Daily Screentime Limit removed)
         if (isFocusActive && FocusStateRepository.isPackageBlockedDuringFocus(packageName)) {
             blockApp(packageName, OverlayActivity.REASON_FOCUS_ACTIVE)
             return
-        }
-
-        // 2. Daily App Usage Quota Enforcement
-        val limitMinutes = blockRepo?.getDailyLimitMinutesSync(packageName) ?: 0
-        if (limitMinutes > 0 && usageRepo != null) {
-            val usageMs = usageRepo.getPackageTodayUsageMillis(packageName)
-            val limitMs = limitMinutes * 60 * 1000L
-            if (usageMs >= limitMs) {
-                blockApp(packageName, OverlayActivity.REASON_LIMIT_EXCEEDED)
-                return
-            }
         }
     }
 

@@ -317,7 +317,7 @@ object FocusStateRepository {
                             packageName = pkg,
                             appName = label,
                             isBlocked = true,
-                            dailyLimitMinutes = 30,
+                            dailyLimitMinutes = 0,
                             category = "Distracting"
                         )
                     )
@@ -355,7 +355,7 @@ object FocusStateRepository {
                             packageName = pkg,
                             appName = label,
                             isBlocked = true,
-                            dailyLimitMinutes = 30,
+                            dailyLimitMinutes = 0,
                             category = "Game"
                         )
                     )

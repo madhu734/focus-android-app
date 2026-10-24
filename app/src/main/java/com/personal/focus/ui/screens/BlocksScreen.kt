@@ -125,7 +125,7 @@ fun BlocksScreen() {
     ) {
         item {
             Text(
-                text = "BLOCKS & USAGE LIMITS",
+                text = "BLOCKS & STUDY MODE",
                 color = PrimaryGreen,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
@@ -185,7 +185,7 @@ fun BlocksScreen() {
         }
 
         // =========================================================================
-        // DISTRACTING APPS & SCREEN LIMITS SECTION
+        // DISTRACTING APPS SECTION
         // =========================================================================
         item {
             Row(
@@ -194,7 +194,7 @@ fun BlocksScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "DISTRACTING APPS & LIMITS",
+                    text = "DISTRACTING APPS",
                     color = Neutral90,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -240,7 +240,7 @@ fun BlocksScreen() {
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Tap 'Select Distracting Apps' to choose installed user apps and set daily screentime limits or focus blocks.",
+                            text = "Tap 'Select Distracting Apps' to choose installed user apps to block during active focus sessions.",
                             color = Neutral90,
                             fontSize = 12.sp
                         )
@@ -254,11 +254,6 @@ fun BlocksScreen() {
                     onBlockToggled = { blocked ->
                         scope.launch {
                             blockRepo.setAppBlocked(rule.packageName, rule.appName, blocked, rule.category)
-                        }
-                    },
-                    onLimitChanged = { limitMins ->
-                        scope.launch {
-                            blockRepo.setDailyLimit(rule.packageName, rule.appName, limitMins, rule.category)
                         }
                     },
                     onWhitelistToggled = { whitelisted ->
@@ -384,7 +379,7 @@ fun BlocksScreen() {
                                                 packageName = appInfo.packageName,
                                                 appName = appInfo.appName,
                                                 isBlocked = true,
-                                                dailyLimitMinutes = 30,
+                                                dailyLimitMinutes = 0,
                                                 category = if (appInfo.isGame) "Game" else "Distracting"
                                             )
                                         )
@@ -479,12 +474,9 @@ fun BlocksScreen() {
 fun AppBlockRuleCard(
     rule: AppBlockRule,
     onBlockToggled: (Boolean) -> Unit,
-    onLimitChanged: (Int) -> Unit,
     onWhitelistToggled: (Boolean) -> Unit,
     onDelete: () -> Unit
 ) {
-    var limitMinutes by remember(rule.dailyLimitMinutes) { mutableIntStateOf(rule.dailyLimitMinutes) }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
@@ -549,38 +541,7 @@ fun AppBlockRuleCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Daily Quota Slider
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Daily Screentime Limit:",
-                    color = Neutral90,
-                    fontSize = 13.sp
-                )
-                Text(
-                    text = if (limitMinutes == 0) "No Limit" else "${limitMinutes}m",
-                    color = PrimaryGreen,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
-            }
-
-            Slider(
-                value = limitMinutes.toFloat(),
-                onValueChange = { limitMinutes = it.toInt() },
-                onValueChangeFinished = { onLimitChanged(limitMinutes) },
-                valueRange = 0f..120f,
-                steps = 7,
-                colors = SliderDefaults.colors(
-                    thumbColor = PrimaryGreen,
-                    activeTrackColor = PrimaryGreen,
-                    inactiveTrackColor = Neutral10
-                )
-            )
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Whitelist during Focus Toggle & Remove button
             Row(

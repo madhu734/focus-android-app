@@ -85,29 +85,11 @@ fun PermissionChecklistCard(
     var hasNotificationListener by remember { mutableStateOf(checkNotificationListener(context)) }
     var hasOverlayPermission by remember { mutableStateOf(checkOverlayPermission(context)) }
     var hasDeviceAdmin by remember { mutableStateOf(checkDeviceAdmin(context)) }
-    var isExpanded by remember { mutableStateOf(false) }
 
     val adminLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) {
         hasDeviceAdmin = checkDeviceAdmin(context)
-    }
-
-    // Re-check permissions when returning to app from System Settings
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                hasUsageAccess = checkUsageAccess(context)
-                hasAccessibility = checkAccessibility(context)
-                hasNotificationListener = checkNotificationListener(context)
-                hasOverlayPermission = checkOverlayPermission(context)
-                hasDeviceAdmin = checkDeviceAdmin(context)
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
     }
 
     val permissions = listOf(
@@ -207,6 +189,26 @@ fun PermissionChecklistCard(
     val totalCount = permissions.size
     val allGranted = grantedCount == totalCount
 
+    // Default expanded until all 5/5 permissions are granted; auto-collapses once 5/5 Active
+    var isExpanded by remember(allGranted) { mutableStateOf(!allGranted) }
+
+    // Re-check permissions when returning to app from System Settings
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasUsageAccess = checkUsageAccess(context)
+                hasAccessibility = checkAccessibility(context)
+                hasNotificationListener = checkNotificationListener(context)
+                hasOverlayPermission = checkOverlayPermission(context)
+                hasDeviceAdmin = checkDeviceAdmin(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
@@ -221,7 +223,13 @@ fun PermissionChecklistCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { isExpanded = !isExpanded },
+                    .clickable {
+                        if (allGranted) {
+                            isExpanded = !isExpanded
+                        } else {
+                            isExpanded = true
+                        }
+                    },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -235,7 +243,7 @@ fun PermissionChecklistCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (allGranted) "ALL PERMISSIONS ACTIVE" else "PERMISSION SETUP CHECKLIST",
+                            text = if (allGranted) "ALL PERMISSIONS ACTIVE (5/5)" else "PERMISSION SETUP CHECKLIST",
                             color = if (allGranted) PrimaryGreen else SecondaryOrange,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -245,21 +253,30 @@ fun PermissionChecklistCard(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (allGranted) {
-                            "Full system protection & blocking enabled ($grantedCount/$totalCount)"
+                            "Full system protection & blocking enabled ($grantedCount/$totalCount Active)"
                         } else {
-                            "$grantedCount of $totalCount permissions granted • Tap Setup to grant"
+                            "$grantedCount of $totalCount permissions granted • Grant all 5 to complete setup"
                         },
                         color = Neutral90,
                         fontSize = 12.sp
                     )
                 }
 
-                Text(
-                    text = if (isExpanded) "Hide ▲" else "Setup ▼",
-                    color = PrimaryGreen,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (allGranted) {
+                    Text(
+                        text = if (isExpanded) "Hide ▲" else "5/5 Active ▼",
+                        color = PrimaryGreen,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    Text(
+                        text = "$grantedCount/$totalCount",
+                        color = SecondaryOrange,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -275,9 +292,19 @@ fun PermissionChecklistCard(
                 trackColor = Neutral10
             )
 
-            // Collapsible items list (collapsed by default so Focus tab fits on one screen)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Reassuring Privacy & Local Data Description below Setup Bar
+            Text(
+                text = "Enabling these permissions is essential for uninterrupted focus and strict distraction blocking. 100% of your data stays locally on your device—nothing is ever uploaded or shared.",
+                color = Neutral90,
+                fontSize = 11.sp,
+                lineHeight = 15.sp
+            )
+
+            // Always expanded until 5/5 permissions are granted; auto-collapses when allGranted is true
             AnimatedVisibility(
-                visible = isExpanded,
+                visible = !allGranted || isExpanded,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
