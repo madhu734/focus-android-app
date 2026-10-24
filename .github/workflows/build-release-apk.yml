@@ -21,8 +21,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
 
       - name: Generate Release Keystore
         run: |
@@ -36,15 +42,26 @@ jobs:
             -storepass FocusProd2026Pass \
             -keypass FocusProd2026Pass \
             -dname "CN=FocusApp, OU=Mobile, O=Personal, L=Dhaka, S=Dhaka, C=BD"
+          ls -la app/release-key.jks
+          if [ ! -f debug.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore debug.keystore \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass android \
+              -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
 
-      - name: Setup Gradle & Build Release APK
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-          arguments: assembleRelease --no-daemon --stacktrace
+      - name: Build Signed Release APK
+        run: |
+          gradle assembleRelease --no-daemon --stacktrace
 
       - name: Prepare Signed APK File
         run: |
+          ls -R app/build/outputs/apk/
           cp app/build/outputs/apk/release/*.apk Focus-Signed-Release.apk
           ls -lh Focus-Signed-Release.apk
 
