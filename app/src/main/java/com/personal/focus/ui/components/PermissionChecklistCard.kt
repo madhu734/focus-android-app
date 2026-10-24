@@ -48,7 +48,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
@@ -96,7 +100,7 @@ fun PermissionChecklistCard(
         PermissionItem(
             id = "usage",
             title = "Usage Access",
-            description = "Monitors app screentime and enforces daily limits",
+            description = "Monitors app screentime and focus session activity",
             isGranted = hasUsageAccess,
             onGrant = {
                 try {
@@ -191,6 +195,9 @@ fun PermissionChecklistCard(
 
     // Default expanded until all 5/5 permissions are granted; auto-collapses once 5/5 Active
     var isExpanded by remember(allGranted) { mutableStateOf(!allGranted) }
+
+    val showRestrictedSettingsGuide = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            (!hasAccessibility || !hasNotificationListener)
 
     // Re-check permissions when returning to app from System Settings
     DisposableEffect(lifecycleOwner) {
@@ -315,10 +322,136 @@ fun PermissionChecklistCard(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     permissions.forEach { item ->
+                        if (item.id == "accessibility" && showRestrictedSettingsGuide) {
+                            RestrictedSettingsHelperBanner(
+                                onOpenAppInfo = {
+                                    try {
+                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = Uri.fromParts("package", context.packageName, null)
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (_: Throwable) {
+                                    }
+                                }
+                            )
+                        }
                         PermissionItemRow(item = item)
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RestrictedSettingsHelperBanner(
+    onOpenAppInfo: () -> Unit
+) {
+    var showGuideSteps by remember { mutableStateOf(true) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Neutral0)
+            .border(
+                width = 1.dp,
+                color = Gold.copy(alpha = 0.65f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(12.dp)
+            .testTag("restricted_settings_helper_banner")
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showGuideSteps = !showGuideSteps },
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "🔓 পারমিশন অন করতে 'Restricted Setting' দেখাচ্ছে?",
+                color = Gold,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = if (showGuideSteps) "▲" else "▼",
+                color = Gold,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        AnimatedVisibility(
+            visible = showGuideSteps,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(SpanStyle(color = PrimaryGreen, fontWeight = FontWeight.Bold)) {
+                            append("ধাপ ১: ")
+                        }
+                        append("প্রথমে নিচের Accessibility Service বা Notification Blocker-এ ট্যাপ করে সেটিংসে যান এবং অ্যাপটির ওপর ট্যাপ করুন (Restricted setting লেখা আসলে OK দিন — এটি না করলে আনলক অপশন চালু হয় না)।")
+                    },
+                    color = Neutral100,
+                    fontSize = 11.5.sp,
+                    lineHeight = 16.sp
+                )
+
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(SpanStyle(color = PrimaryGreen, fontWeight = FontWeight.Bold)) {
+                            append("ধাপ ২: ")
+                        }
+                        append("নিচের \"Open App Info\" বাটনে চাপুন। এরপর উপরের ডান কোণায় ⋮ (৩-ডট মেনু) থেকে (অথবা নিচে স্ক্রল করে) Allow restricted settings অন করুন।")
+                    },
+                    color = Neutral100,
+                    fontSize = 11.5.sp,
+                    lineHeight = 16.sp
+                )
+
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(SpanStyle(color = PrimaryGreen, fontWeight = FontWeight.Bold)) {
+                            append("ধাপ ৩: ")
+                        }
+                        append("এবার ফিরে এসে পুনরায় Accessibility Service এবং Notification Blocker চালু করুন।")
+                    },
+                    color = Neutral100,
+                    fontSize = 11.5.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Button(
+            onClick = onOpenAppInfo,
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .testTag("open_app_info_restricted_button")
+        ) {
+            Text(
+                text = "⚙ Open App Info (Allow Restricted Settings)",
+                color = Color.Black,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp
+            )
         }
     }
 }
